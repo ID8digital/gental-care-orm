@@ -1,4 +1,9 @@
 const express = require("express");
+const { createClient } = require("@supabase/supabase-js");
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 const crypto  = require("crypto");
 const fetch   = require("node-fetch");
 require("dotenv").config({ path: "../.env" });
@@ -289,7 +294,19 @@ async function processMessage({ message, context }) {
   }
 
   const result = { classification, context, message, ts: new Date().toISOString() };
-
+await supabase.from("messages").insert({
+  platform: context.platform,
+  type: context.type,
+  sender_id: context.senderId,
+  sender_name: context.senderName,
+  message_text: message,
+  intent: classification.intent,
+  sentiment: classification.sentiment,
+  action_taken: classification.action,
+  confidence: classification.confidence,
+  escalation_tag: classification.escalation_tag,
+  escalation_reason: classification.escalation_reason,
+}).catch(err => log("warn", "Supabase insert failed", { error: err.message }));
   try {
     switch (classification.action) {
 
@@ -356,6 +373,14 @@ async function processMessage({ message, context }) {
           }
         }
         result.outcome = "escalated";
+        await supabase.from("escalations").insert({
+  platform: context.platform,
+  sender_name: context.senderName,
+  message_text: message,
+  tag: classification.escalation_tag,
+  priority: classification.priority,
+  status: "open"
+}).catch(err => log("warn", "Supabase escalation insert failed", { error: err.message }));
         break;
       }
     }

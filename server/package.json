@@ -1,14 +1,14 @@
 {
   "name": "gental-care-orm-engine",
-  "version": "1.0.0",
-  "description": "Automated ORM engine for Gental Care — Bidco Africa",
+  "version": "2.0.0",
+  "description": "Gental Care ORM Engine — Bidco Africa — Production",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "node test-local.js"
+    "dev": "nodemon index.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "node-fetch": "^2.7.0"

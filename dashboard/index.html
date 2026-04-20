@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gental Care — ORM Live Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green: #2D6A4F; --green-l: #52B788; --green-p: #D8F3DC;
+  --dark: #0F172A; --mid: #1E293B; --surface: #FFFFFF;
+  --bg: #F8FAFC; --card: #FFFFFF;
+  --amber: #D97706; --amber-p: #FEF3C7;
+  --red: #DC2626; --red-p: #FEE2E2;
+  --blue: #2563EB; --blue-p: #EFF6FF;
+  --purple: #7C3AED; --purple-p: #F5F3FF;
+  --gray: #64748B; --border: #E2E8F0;
+  --text: #0F172A; --muted: #64748B;
+  --radius: 10px; --radius-lg: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+.layout { display: flex; height: 100vh; overflow: hidden; }
+
+/* SIDEBAR */
+.sidebar { width: 210px; background: var(--dark); flex-shrink: 0; display: flex; flex-direction: column; }
+.sb-brand { padding: 18px 16px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.leaf { width: 30px; height: 30px; background: var(--green-l); border-radius: 7px 7px 7px 2px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: 9px; }
+.sb-name { font-family: 'DM Serif Display', serif; font-size: 14px; color: #fff; }
+.sb-sub { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; letter-spacing: .05em; text-transform: uppercase; }
+.nav { flex: 1; padding: 10px 8px; }
+.nav-s { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: .1em; text-transform: uppercase; padding: 10px 8px 4px; }
+.nav-i { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; cursor: pointer; color: rgba(255,255,255,0.5); font-size: 13px; border: none; background: transparent; width: 100%; text-align: left; margin-bottom: 2px; transition: all .13s; }
+.nav-i:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+.nav-i.active { background: var(--green); color: #fff; font-weight: 500; }
+.nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+.sb-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); font-size: 11px; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 7px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot-on { background: var(--green-l); box-shadow: 0 0 5px var(--green-l); }
+.dot-off { background: #94A3B8; }
+
+/* MAIN */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { height: 54px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 22px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.tb-title { font-size: 15px; font-weight: 600; }
+.tb-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.tb-right { display: flex; gap: 8px; align-items: center; }
+.pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .12s; }
+.pill:hover { background: var(--bg); }
+.pill.green { background: var(--green); color: #fff; border-color: var(--green); }
+.content { flex: 1; overflow-y: auto; padding: 20px 22px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* METRICS */
+.metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+.mc { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; position: relative; overflow: hidden; }
+.mc::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.mc.g::before { background: var(--green-l); }
+.mc.b::before { background: var(--blue); }
+.mc.a::before { background: var(--amber); }
+.mc.r::before { background: var(--red); }
+.mc-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
+.mc-val { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--dark); line-height: 1; }
+.mc-foot { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* CARDS */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 14px; }
+.card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 14px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+/* FEED */
+.feed-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.feed-item:last-child { border-bottom: none; }
+.feed-platform { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.fp-fb { background: #E7F0FD; }
+.fp-ig { background: #FDE7F0; }
+.fp-tt { background: #E7F7FC; }
+.feed-body { flex: 1; min-width: 0; }
+.feed-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
+.feed-platform-name { font-size: 11px; font-weight: 600; color: var(--muted); }
+.feed-time { font-size: 10px; color: var(--muted); }
+.feed-type { font-size: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.feed-msg { font-size: 13px; color: var(--text); margin-bottom: 5px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-outcome { display: flex; gap: 6px; align-items: center; }
+
+/* BADGES */
+.badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+.b-reply { background: var(--blue-p); color: var(--blue); }
+.b-esc { background: var(--amber-p); color: var(--amber); }
+.b-mod { background: var(--purple-p); color: var(--purple); }
+.b-like { background: var(--green-p); color: var(--green); }
+.b-high { background: var(--red-p); color: var(--red); }
+.b-med { background: var(--amber-p); color: var(--amber); }
+.b-low { background: var(--green-p); color: var(--green); }
+
+/* INTENT BARS */
+.ib-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,.04); }
+.ib-row:last-child { border-bottom: none; }
+.ib-name { font-size: 12px; width: 150px; flex-shrink: 0; }
+.ib-track { flex: 1; height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
+.ib-fill { height: 100%; border-radius: 3px; }
+.ib-count { font-size: 11px; color: var(--muted); width: 24px; text-align: right; }
+
+/* SENTIMENT */
+.sent-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 7px; }
+.sp { background: var(--green-l); }
+.sn { background: #94A3B8; }
+.sg { background: var(--red); }
+
+/* ESC CARDS */
+.esc-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 10px; }
+.esc-inner { display: flex; }
+.esc-stripe { width: 4px; flex-shrink: 0; }
+.esc-body { flex: 1; padding: 12px 14px; }
+.esc-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.esc-msg { font-size: 13px; color: var(--text); font-style: italic; margin-bottom: 7px; line-height: 1.4; }
+.esc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.esc-actions { padding: 9px 14px; background: var(--bg); border-top: 1px solid var(--border); display: flex; gap: 7px; }
+.btn-sm { padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--text); font-family: 'DM Sans', sans-serif; transition: all .1s; }
+.btn-sm:hover { background: var(--bg); }
+.btn-sm.g { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* SETUP STEPS */
+.step { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.step:last-child { border-bottom: none; }
+.step-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 1px; }
+.step-content { flex: 1; }
+.step-title { font-size: 13px; font-weight: 600; color: var(--dark); margin-bottom: 5px; }
+.step-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.code-block { background: var(--dark); color: #94A3B8; border-radius: 8px; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 8px; line-height: 1.7; overflow-x: auto; }
+.code-block .h { color: #52B788; }
+.code-block .v { color: #F59E0B; }
+.code-block .s { color: #93C5FD; }
+
+/* FILTERS */
+.filter-row { display: flex; gap: 7px; margin-bottom: 14px; flex-wrap: wrap; }
+.fb { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all .12s; }
+.fb:hover { background: var(--bg); }
+.fb.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* LIVE INDICATOR */
+.live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green-l); }
+.live-pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green-l); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.2)} }
+
+/* CONFIG INPUTS */
+.cfg-input { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--bg); outline: none; margin-bottom: 10px; }
+.cfg-input:focus { border-color: var(--green-l); }
+.cfg-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: block; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-brand">
+      <div class="leaf">🌿</div>
+      <div class="sb-name">Gental Care ORM</div>
+      <div class="sb-sub">Live Dashboard</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-s">Monitoring</div>
+      <button class="nav-i active" onclick="show('live',this)"><span>📡</span> Live feed</button>
+      <button class="nav-i" onclick="show('sentiment',this)"><span>📊</span> Sentiment</button>
+      <button class="nav-i" onclick="show('escalations',this)"><span>🎫</span> Escalations <span class="nav-badge" id="esc-badge">8</span></button>
+      <div class="nav-s">System</div>
+      <button class="nav-i" onclick="show('setup',this)"><span>🚀</span> Deployment guide</button>
+      <button class="nav-i" onclick="show('config',this)"><span>⚙️</span> Configuration</button>
+    </nav>
+    <div class="sb-footer">
+      <div class="dot dot-on" id="sys-dot"></div>
+      <span id="sys-status">Engine online</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="tb-title" id="page-title">Live feed</div>
+        <div class="tb-sub">Gental Care · Bidco Africa · Auto-processing all channels</div>
+      </div>
+      <div class="tb-right">
+        <div class="live-dot"><div class="live-pulse"></div> Auto-processing on</div>
+        <button class="pill green" onclick="show('setup', document.querySelectorAll('.nav-i')[3])">🚀 Deploy now</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── LIVE FEED ── -->
+      <div class="panel active" id="panel-live">
+        <div class="metrics">
+          <div class="mc g"><div class="mc-label">Processed today</div><div class="mc-val" id="m-total">0</div><div class="mc-foot">All channels</div></div>
+          <div class="mc b"><div class="mc-label">Auto-replied</div><div class="mc-val" id="m-replied">0</div><div class="mc-foot">No human needed</div></div>
+          <div class="mc a"><div class="mc-label">Escalated</div><div class="mc-val" id="m-esc">0</div><div class="mc-foot">Zoho Desk tickets</div></div>
+          <div class="mc r"><div class="mc-label">Moderated</div><div class="mc-val" id="m-mod">0</div><div class="mc-foot">Spam hidden</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+            Recent messages
+            <div class="live-dot" style="font-size:11px"><div class="live-pulse"></div> Processing automatically</div>
+          </div>
+          <div id="feed-list">
+            <!-- Simulated feed entries -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SENTIMENT ── -->
+      <div class="panel" id="panel-sentiment">
+        <div class="metrics">
+          <div class="mc g"><div class="mc-label">Sentiment score</div><div class="mc-val">72</div><div class="mc-foot">Out of 100 · trending ↑</div></div>
+          <div class="mc b"><div class="mc-label">Positive</div><div class="mc-val">58%</div><div class="mc-foot">108 of 187 queries</div></div>
+          <div class="mc a"><div class="mc-label">Neutral</div><div class="mc-val">32%</div><div class="mc-foot">60 queries</div></div>
+          <div class="mc r"><div class="mc-label">Negative</div><div class="mc-val">10%</div><div class="mc-foot">19 queries — monitored</div></div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Platform breakdown</div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:12px;font-weight:600;margin-bottom:5px">Facebook</div>
+              <div class="sent-bar"><div class="sp" style="width:60%"></div><div class="sn" style="width:30%"></div><div class="sg" style="width:10%"></div></div>
+              <div style="font-size:11px;color:var(--muted)">60% positive · 30% neutral · 10% negative</div>
+            </div>
+            <div style="margin-bottom:14px">
+              <div style="font-size:12px;font-weight:600;margin-bottom:5px">Instagram</div>
+              <div class="sent-bar"><div class="sp" style="width:54%"></div><div class="sn" style="width:35%"></div><div class="sg" style="width:11%"></div></div>
+              <div style="font-size:11px;color:var(--muted)">54% positive · 35% neutral · 11% negative</div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600;margin-bottom:5px">TikTok</div>
+              <div class="sent-bar"><div class="sp" style="width:70%"></div><div class="sn" style="width:25%"></div><div class="sg" style="width:5%"></div></div>
+              <div style="font-size:11px;color:var(--muted)">70% positive · 25% neutral · 5% negative</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Intent volume</div>
+            <div class="ib-row"><span class="ib-name">Partnerships & PR</span><div class="ib-track"><div class="ib-fill" style="width:100%;background:#2563EB"></div></div><span class="ib-count">42</span></div>
+            <div class="ib-row"><span class="ib-name">General greeting</span><div class="ib-track"><div class="ib-fill" style="width:90%;background:var(--green-l)"></div></div><span class="ib-count">38</span></div>
+            <div class="ib-row"><span class="ib-name">Product inquiry</span><div class="ib-track"><div class="ib-fill" style="width:74%;background:#7C3AED"></div></div><span class="ib-count">31</span></div>
+            <div class="ib-row"><span class="ib-name">Stock/availability</span><div class="ib-track"><div class="ib-fill" style="width:62%;background:var(--amber)"></div></div><span class="ib-count">26</span></div>
+            <div class="ib-row"><span class="ib-name">Product quality</span><div class="ib-track"><div class="ib-fill" style="width:36%;background:var(--red)"></div></div><span class="ib-count">15</span></div>
+            <div class="ib-row"><span class="ib-name">Online orders</span><div class="ib-track"><div class="ib-fill" style="width:31%;background:#1D9E75"></div></div><span class="ib-count">13</span></div>
+            <div class="ib-row"><span class="ib-name">Job inquiries</span><div class="ib-track"><div class="ib-fill" style="width:21%;background:#94A3B8"></div></div><span class="ib-count">9</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ESCALATIONS ── -->
+      <div class="panel" id="panel-escalations">
+        <div class="filter-row">
+          <button class="fb active" onclick="filterEsc('all',this)">All (8)</button>
+          <button class="fb" onclick="filterEsc('quality',this)">Product quality (4)</button>
+          <button class="fb" onclick="filterEsc('stock',this)">Stock issues (2)</button>
+          <button class="fb" onclick="filterEsc('negative',this)">High-negative (2)</button>
+        </div>
+        <div id="esc-list"></div>
+      </div>
+
+      <!-- ── SETUP ── -->
+      <div class="panel" id="panel-setup">
+        <div class="card">
+          <div class="card-title">Deployment guide — step by step</div>
+          <div class="step">
+            <div class="step-num" style="background:var(--green)">1</div>
+            <div class="step-content">
+              <div class="step-title">Deploy the server to Render (free tier works for pilot)</div>
+              <div class="step-desc">Push the <code>gental-care-orm/</code> folder to a GitHub repo. Go to render.com → New Web Service → connect your repo. Render auto-detects the <code>render.yaml</code> config. Set region to Singapore (closest to Kenya).</div>
+              <div class="code-block"><span class="h"># Your live webhook URL will be:</span><br><span class="s">https://gental-care-orm-engine.onrender.com/webhook/meta</span><br><span class="s">https://gental-care-orm-engine.onrender.com/webhook/tiktok</span><br><span class="s">https://gental-care-orm-engine.onrender.com/health</span></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--blue)">2</div>
+            <div class="step-content">
+              <div class="step-title">Set environment variables in Render dashboard</div>
+              <div class="step-desc">In Render → your service → Environment. Add all values from <code>.env.example</code>. Start with just ANTHROPIC_API_KEY and META_* — Zoho and TikTok can come later.</div>
+              <div class="code-block">
+                <span class="h">Required for MVP:</span><br>
+                <span class="v">ANTHROPIC_API_KEY</span>=<span class="s">sk-ant-...</span><br>
+                <span class="v">META_APP_SECRET</span>=<span class="s">from Meta Developer portal</span><br>
+                <span class="v">META_PAGE_ACCESS_TOKEN</span>=<span class="s">long-lived page token</span><br>
+                <span class="v">META_VERIFY_TOKEN</span>=<span class="s">gental_care_webhook_2025</span>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--purple)">3</div>
+            <div class="step-content">
+              <div class="step-title">Create a Meta Developer App and connect the Gental Care page</div>
+              <div class="step-desc">Go to developers.facebook.com → Create App → Business type. Add "Webhooks" product. In Webhooks → Page → Subscribe to: <strong>messages, feed, mention</strong>. For Instagram: add "Instagram Graph API" → subscribe to <strong>comments, messages</strong>. Enter your Render webhook URL and verify token.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--amber)">4</div>
+            <div class="step-content">
+              <div class="step-title">Generate a long-lived Page Access Token</div>
+              <div class="step-desc">In Meta → Graph API Explorer → select your Page → get token → extend it via the token debugger (60-day tokens expire — automate renewal or use a System User token which never expires). This token lets the engine post replies and hide comments on behalf of the page.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--red)">5</div>
+            <div class="step-content">
+              <div class="step-title">Connect Zoho Desk for escalation tickets</div>
+              <div class="step-desc">Zoho Desk → Settings → Developer Space → Self Client → Generate OAuth token with scope <code>Desk.tickets.CREATE, Desk.tickets.READ</code>. Add ZOHO_OAUTH_TOKEN, ZOHO_ORG_ID, ZOHO_DEPARTMENT_ID to Render. Tickets auto-create with tag, priority, and full context.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--gray)">6</div>
+            <div class="step-content">
+              <div class="step-title">TikTok (add after Meta pilot is stable)</div>
+              <div class="step-desc">TikTok for Developers → create app → request Comment API scope. TikTok requires app review (1–3 weeks). Once approved, add TIKTOK_ACCESS_TOKEN to Render. Note: TikTok's API only supports comments on your own videos — no DMs via API currently.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num" style="background:var(--green)">7</div>
+            <div class="step-content">
+              <div class="step-title">Test end-to-end before going live</div>
+              <div class="step-desc">Comment on a Gental Care post from a test account. Check Render logs to see the webhook fire, Claude classify it, and the reply post back. Check <code>/health</code> endpoint shows all integrations as connected. Run the local test suite first: <code>cd server && node test-local.js</code></div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="background:#FFFBEB;border-color:#FDE68A">
+          <div class="card-title" style="color:var(--amber)">⚠ Meta app review note</div>
+          <div style="font-size:13px;color:#92400E;line-height:1.6">For posting replies to comments and DMs on behalf of a Page, Meta requires the <strong>pages_manage_engagement</strong> and <strong>pages_messaging</strong> permissions. These go through Meta's App Review process (typically 1–5 business days). In the meantime, the engine can receive and classify webhooks — it just can't post replies until approved. You can test everything in Development Mode using only the Page admin's account.</div>
+        </div>
+      </div>
+
+      <!-- ── CONFIG ── -->
+      <div class="panel" id="panel-config">
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title">Server URL (after Render deploy)</div>
+            <label class="cfg-label">Your deployed URL</label>
+            <input class="cfg-input" id="server-url" placeholder="https://gental-care-orm-engine.onrender.com" />
+            <button class="pill green" onclick="checkHealth()">Check health →</button>
+            <div id="health-result" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Integration status</div>
+            <div id="integration-status">
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Claude API</span><span id="s-claude" style="color:var(--muted)">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Meta (FB + IG)</span><span id="s-meta" style="color:var(--muted)">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Zoho Desk</span><span id="s-zoho" style="color:var(--muted)">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px"><span>TikTok</span><span id="s-tiktok" style="color:var(--muted)">—</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">What to hand off to your team</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg);border-radius:8px">
+              <span style="font-size:16px;flex-shrink:0">📁</span>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:3px">Files to hand to tech person</div><div style="font-size:12px;color:var(--muted)">The <code>gental-care-orm/</code> folder (GitHub repo). They push to GitHub, create Render service, set env vars. ~2 hours of work.</div></div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg);border-radius:8px">
+              <span style="font-size:16px;flex-shrink:0">🖥</span>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:3px">For your team manager</div><div style="font-size:12px;color:var(--muted)">This dashboard HTML file. Open in browser, point to the Render server URL. Shows live feed, escalations, and sentiment — no coding required.</div></div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg);border-radius:8px">
+              <span style="font-size:16px;flex-shrink:0">🎫</span>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:3px">For the social team</div><div style="font-size:12px;color:var(--muted)">Escalated queries appear in Zoho Desk automatically. They respond to tickets there, not on the platform directly. The system handles everything else.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const TITLES = {
+  live: 'Live feed',
+  sentiment: 'Sentiment analytics',
+  escalations: 'Escalations — open tickets',
+  setup: 'Deployment guide',
+  config: 'Configuration'
+};
+
+function show(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-i').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('page-title').textContent = TITLES[name] || name;
+  if (name === 'escalations') renderEsc('all');
+}
+
+// ── SIMULATED LIVE FEED ───────────────────────────────────────────────
+const FEED_DATA = [
+  { platform: 'Facebook', type: 'comment', msg: 'Where can I buy Gental Care diapers in Westlands?', action: 'auto_reply', intent: 'stock', time: '2m ago' },
+  { platform: 'Instagram', type: 'dm', msg: 'I would love to collaborate with Gental Care as an influencer', action: 'auto_reply', intent: 'partnership', time: '5m ago' },
+  { platform: 'Facebook', type: 'ad_comment', msg: 'How much is the 62pcs midi pants?', action: 'auto_reply', intent: 'pricing', time: '8m ago' },
+  { platform: 'Facebook', type: 'comment', msg: 'Ukiwa na hii form gamepawa 600shs daily link hapa', action: 'moderate', intent: 'spam', time: '12m ago' },
+  { platform: 'Instagram', type: 'comment', msg: 'The waistband on the diaper keeps tearing when I put it on', action: 'escalate', intent: 'quality', time: '18m ago' },
+  { platform: 'Facebook', type: 'comment', msg: 'The best diaper in the market 💯💯', action: 'like', intent: 'positive', time: '25m ago' },
+  { platform: 'TikTok', type: 'comment', msg: 'Are these available in Mombasa?', action: 'auto_reply', intent: 'stock', time: '31m ago' },
+  { platform: 'Instagram', type: 'dm', msg: 'Can I buy online and get delivery to Kisumu?', action: 'auto_reply', intent: 'online_order', time: '45m ago' },
+];
+
+const PF_ICONS = { Facebook: '📘', Instagram: '📸', TikTok: '🎵' };
+const PF_CLASS = { Facebook: 'fp-fb', Instagram: 'fp-ig', TikTok: 'fp-tt' };
+const ACTION_BADGE = {
+  auto_reply: '<span class="badge b-reply">✅ Auto-replied</span>',
+  escalate: '<span class="badge b-esc">🎫 Zoho ticket</span>',
+  moderate: '<span class="badge b-mod">🟣 Hidden</span>',
+  like: '<span class="badge" style="background:var(--green-p);color:var(--green)">💚 Liked</span>',
+};
+
+function renderFeed() {
+  const list = document.getElementById('feed-list');
+  let replied = 0, esc = 0, mod = 0;
+  list.innerHTML = FEED_DATA.map(item => {
+    if (item.action === 'auto_reply') replied++;
+    if (item.action === 'escalate') esc++;
+    if (item.action === 'moderate') mod++;
+    return `<div class="feed-item">
+      <div class="feed-platform ${PF_CLASS[item.platform]}">${PF_ICONS[item.platform]}</div>
+      <div class="feed-body">
+        <div class="feed-meta">
+          <span class="feed-platform-name">${item.platform}</span>
+          <span class="feed-type">${item.type}</span>
+          <span class="feed-time">${item.time}</span>
+        </div>
+        <div class="feed-msg">${item.msg}</div>
+        <div class="feed-outcome">${ACTION_BADGE[item.action] || ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('m-total').textContent = FEED_DATA.length;
+  document.getElementById('m-replied').textContent = replied;
+  document.getElementById('m-esc').textContent = esc;
+  document.getElementById('m-mod').textContent = mod;
+}
+
+// ── ESCALATIONS ───────────────────────────────────────────────────────
+const ESC = [
+  { id:'GC-0041', type:'quality', platform:'Instagram DM', msg:'Hi, I\'m a new mum. To be honest, the diapers leak every time.', priority:'high', date:'31 Jul 2025', tag:'QUALITY · LEAK' },
+  { id:'GC-0082', type:'quality', platform:'Facebook DM', msg:'Your diaper is good but the waistband is weak — it tears when putting it on.', priority:'high', date:'4 Sep 2025', tag:'QUALITY · WAISTBAND' },
+  { id:'GC-0097', type:'negative', platform:'Instagram DM', msg:'Hey what happened to the Gental washing machine powder? Can\'t find it anywhere.', priority:'medium', date:'11 Aug 2025', tag:'STOCK · DETERGENT' },
+  { id:'GC-0103', type:'stock', platform:'Facebook Comment', msg:'Nimetafuta hadi nimechoka — Sam West, Quickmart, Carrefour — hakuna machine wash powder.', priority:'medium', date:'16 Sep 2025', tag:'STOCK · POWDER' },
+  { id:'GC-0118', type:'quality', platform:'Facebook DM', msg:'Packet reads 12–17 kg but the diaper is too small — very inconsistent.', priority:'high', date:'8 Aug 2025', tag:'QUALITY · SIZING' },
+  { id:'GC-0139', type:'negative', platform:'Facebook Comment', msg:'This diaper made me cry.', priority:'high', date:'11 Mar 2026', tag:'NEGATIVE · SENTIMENT' },
+  { id:'GC-0144', type:'stock', platform:'Facebook Comment', msg:'Cannot find size 5 pants — been to Quickmart Ruiru three times now.', priority:'medium', date:'27 Oct 2025', tag:'STOCK · SIZE5' },
+  { id:'GC-0112', type:'negative', platform:'Facebook Comment', msg:'You never announced the winners of the father\'s day contest — three times asking.', priority:'low', date:'26 Jun 2025', tag:'CONTEST · UNRESOLVED' },
+];
+
+const STRIPE = { quality:'var(--red)', stock:'var(--amber)', negative:'#E67E22' };
+
+function filterEsc(type, btn) {
+  document.querySelectorAll('.fb').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const data = type === 'all' ? ESC : ESC.filter(e => e.type === type);
+  const list = document.getElementById('esc-list');
+  list.innerHTML = data.map(e => `
+    <div class="esc-card">
+      <div class="esc-inner">
+        <div class="esc-stripe" style="background:${STRIPE[e.type]||'var(--gray)'}"></div>
+        <div class="esc-body">
+          <div class="esc-id">${e.id} · ${e.platform} · ${e.date}</div>
+          <div class="esc-msg">"${e.msg}"</div>
+          <div class="esc-tags">
+            <span class="badge b-${e.priority === 'high' ? 'high' : e.priority === 'medium' ? 'med' : 'low'}">${e.priority} priority</span>
+            <span style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">${e.tag}</span>
+          </div>
+        </div>
+      </div>
+      <div class="esc-actions">
+        <button class="btn-sm g" onclick="alert('In the live system, this calls Claude to draft a response for the agent to review and send.')">✍ Draft reply</button>
+        <button class="btn-sm" onclick="this.closest('.esc-card').style.opacity='.4';document.getElementById('esc-badge').textContent=Math.max(0,parseInt(document.getElementById('esc-badge').textContent)-1)">✓ Resolve</button>
+        <button class="btn-sm">↗ Open in Zoho Desk</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── HEALTH CHECK ─────────────────────────────────────────────────────
+async function checkHealth() {
+  const url = document.getElementById('server-url').value.trim();
+  if (!url) { document.getElementById('health-result').textContent = 'Enter your server URL first'; return; }
+  document.getElementById('health-result').textContent = 'Checking...';
+  try {
+    const resp = await fetch(url + '/health');
+    const data = await resp.json();
+    const s = data.config;
+    document.getElementById('s-claude').innerHTML = s.claude ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--red)">✗ Not set</span>';
+    document.getElementById('s-meta').innerHTML = s.meta ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--red)">✗ Not set</span>';
+    document.getElementById('s-zoho').innerHTML = s.zoho ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--amber)">⚠ Optional</span>';
+    document.getElementById('s-tiktok').innerHTML = s.tiktok ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--amber)">⚠ Optional</span>';
+    document.getElementById('health-result').innerHTML = '<span style="color:var(--green)">✓ Engine online</span>';
+    document.getElementById('sys-dot').className = 'dot dot-on';
+    document.getElementById('sys-status').textContent = 'Engine online';
+  } catch(e) {
+    document.getElementById('health-result').innerHTML = '<span style="color:var(--red)">✗ Cannot reach server — is it deployed?</span>';
+  }
+}
+
+renderFeed();
+renderEsc('all');
+</script>
+</body>
+</html>

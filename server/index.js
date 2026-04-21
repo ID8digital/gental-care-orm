@@ -216,14 +216,24 @@ async function mcPost(path, body) {
 }
 
 async function resolveSubscriber(psid, platform) {
+  // First try direct lookup by fb_psid
   const field = platform === "Instagram" ? "ig_id" : "fb_psid";
-  const resp = await fetch(
-    `${MC_BASE}/fb/subscriber/findBySystemField?field_name=${field}&field_value=${psid}`,
+  try {
+    const resp = await fetch(
+      `${MC_BASE}/fb/subscriber/findBySystemField?field_name=${field}&field_value=${psid}`,
+      { headers: { "Authorization": `Bearer ${process.env.MANYCHAT_API_KEY}` } }
+    );
+    const data = await resp.json();
+    if (data.status === "success" && data.data?.id) return data.data.id;
+  } catch(e) {}
+  // If not found by psid, try using the ID directly as ManyChat subscriber ID
+  const resp2 = await fetch(
+    `${MC_BASE}/fb/subscriber/getInfo?subscriber_id=${psid}`,
     { headers: { "Authorization": `Bearer ${process.env.MANYCHAT_API_KEY}` } }
   );
-  const data = await resp.json();
-  if (data.status !== "success" || !data.data?.id) throw new Error(`Subscriber not found: ${psid}`);
-  return data.data.id;
+  const data2 = await resp2.json();
+  if (data2.status === "success" && data2.data?.id) return data2.data.id;
+  throw new Error(`Subscriber not found: ${psid}`);
 }
 
 async function sendDM(subscriberId, text) {

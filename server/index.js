@@ -221,24 +221,12 @@ async function resolveSubscriber(psid, platform) {
 }
 
 async function sendDM(subscriberId, text) {
-  try {
-    const result = await mcPost("/fb/sending/sendContent", {
-      subscriber_id: subscriberId,
-      data: { version: "v2", content: { type: "instagram", messages: [{ type: "text", text }] } },
-      message_tag: "ACCOUNT_UPDATE",
-    });
-    log("info", "ManyChat sendDM success", { subscriberId });
-    return result;
-  } catch(e) {
-    log("warn", "ManyChat sendDM instagram type failed, trying facebook type", { error: e.message });
-    const result2 = await mcPost("/fb/sending/sendContent", {
-      subscriber_id: subscriberId,
-      data: { version: "v2", content: { type: "facebook", messages: [{ type: "text", text }] } },
-      message_tag: "ACCOUNT_UPDATE",
-    });
-    log("info", "ManyChat sendDM facebook type success", { subscriberId });
-    return result2;
-  }
+  const result = await mcPost("/fb/sending/sendContent", {
+    subscriber_id: subscriberId,
+    data: { version: "v2", content: { type: "facebook", messages: [{ type: "text", text }] } },
+  });
+  log("info", "ManyChat sendDM success", { subscriberId });
+  return result;
 }
 
 async function replyToComment(commentId, text) {

@@ -216,22 +216,24 @@ async function mcPost(path, body) {
 }
 
 async function resolveSubscriber(psid, platform) {
-  // First try direct lookup by fb_psid
-  const field = platform === "Instagram" ? "ig_id" : "fb_psid";
+  // Try using the ID directly as ManyChat subscriber ID first
   try {
     const resp = await fetch(
-      `${MC_BASE}/fb/subscriber/findBySystemField?field_name=${field}&field_value=${psid}`,
+      `${MC_BASE}/fb/subscriber/getInfo?subscriber_id=${psid}`,
       { headers: { "Authorization": `Bearer ${process.env.MANYCHAT_API_KEY}` } }
     );
     const data = await resp.json();
+    log("info", "ManyChat getInfo response", { status: data.status, id: data.data?.id, psid });
     if (data.status === "success" && data.data?.id) return data.data.id;
-  } catch(e) {}
-  // If not found by psid, try using the ID directly as ManyChat subscriber ID
+  } catch(e) { log("warn", "ManyChat getInfo failed", { error: e.message }); }
+  // Fall back to fb_psid lookup
+  const field = platform === "Instagram" ? "ig_id" : "fb_psid";
   const resp2 = await fetch(
-    `${MC_BASE}/fb/subscriber/getInfo?subscriber_id=${psid}`,
+    `${MC_BASE}/fb/subscriber/findBySystemField?field_name=${field}&field_value=${psid}`,
     { headers: { "Authorization": `Bearer ${process.env.MANYCHAT_API_KEY}` } }
   );
   const data2 = await resp2.json();
+  log("info", "ManyChat findBySystemField response", { status: data2.status, id: data2.data?.id, psid });
   if (data2.status === "success" && data2.data?.id) return data2.data.id;
   throw new Error(`Subscriber not found: ${psid}`);
 }

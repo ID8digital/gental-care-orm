@@ -221,11 +221,24 @@ async function resolveSubscriber(psid, platform) {
 }
 
 async function sendDM(subscriberId, text) {
-  return mcPost("/fb/sending/sendContent", {
-    subscriber_id: subscriberId,
-    data: { version: "v2", content: { type: "instagram", messages: [{ type: "text", text }] } },
-    message_tag: "ACCOUNT_UPDATE",
-  });
+  try {
+    const result = await mcPost("/fb/sending/sendContent", {
+      subscriber_id: subscriberId,
+      data: { version: "v2", content: { type: "instagram", messages: [{ type: "text", text }] } },
+      message_tag: "ACCOUNT_UPDATE",
+    });
+    log("info", "ManyChat sendDM success", { subscriberId });
+    return result;
+  } catch(e) {
+    log("warn", "ManyChat sendDM instagram type failed, trying facebook type", { error: e.message });
+    const result2 = await mcPost("/fb/sending/sendContent", {
+      subscriber_id: subscriberId,
+      data: { version: "v2", content: { type: "facebook", messages: [{ type: "text", text }] } },
+      message_tag: "ACCOUNT_UPDATE",
+    });
+    log("info", "ManyChat sendDM facebook type success", { subscriberId });
+    return result2;
+  }
 }
 
 async function replyToComment(commentId, text) {
@@ -330,9 +343,14 @@ async function processMessage({ message, context }) {
             await sendDM(subId, classification.reply);
             await tagSubscriber(subId, `ORM_${classification.intent.toUpperCase()}`);
             log("info", "DM sent via ManyChat", { intent: classification.intent });
-          } catch {
-            log("warn", "ManyChat subscriber not found, falling back to direct Meta");
-            await directMetaDM(context.senderId, classification.reply);
+          } catch(err) {
+            log("warn", "ManyChat send failed", { error: err.message, senderId: context.senderId });
+            try {
+              await directMetaDM(context.senderId, classification.reply);
+              log("info", "Direct Meta DM sent as fallback");
+            } catch(err2) {
+              log("error", "Both ManyChat and direct Meta failed", { error: err2.message });
+            }
           }
         } else {
           await replyToComment(context.sourceId, classification.reply);

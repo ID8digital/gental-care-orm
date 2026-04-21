@@ -461,7 +461,7 @@ app.post("/webhook/meta", async (req, res) => {
   }
 });
 
-app.post("/webhook/manychat", async (req, res) => {
+app.all, async (req, res) => {
   res.sendStatus(200);
   const { message, subscriber_id, platform = "Facebook", type = "dm" } = req.body;
   if (!message || !subscriber_id) return;

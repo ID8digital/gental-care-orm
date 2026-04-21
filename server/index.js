@@ -461,9 +461,12 @@ app.post("/webhook/meta", async (req, res) => {
   }
 });
 
-app.all, async (req, res) => {
+app.all("/webhook/manychat", async (req, res) => {
   res.sendStatus(200);
-  const { message, subscriber_id, platform = "Facebook", type = "dm" } = req.body;
+  const message = req.body?.message || req.query?.message;
+  const subscriber_id = req.body?.subscriber_id || req.query?.subscriber_id;
+  const platform = req.body?.platform || req.query?.platform || "Facebook";
+  const type = req.body?.type || req.query?.type || "dm";
   if (!message || !subscriber_id) return;
   await processMessage({ message, context: { platform, type, senderId: subscriber_id, sourceId: subscriber_id } });
 });
@@ -512,20 +515,6 @@ app.post("/api/escalations/:id/resolve", async (req, res) => {
   res.json({ success: true });
 });
 
-app.get("/auth/callback", (req, res) => {
-  res.send(`<html><body style="font-family:sans-serif;padding:40px;background:#0F172A;color:#fff">
-    <h2 style="color:#52B788">Token received!</h2>
-    <p>Copy the access_token from the URL bar above.</p>
-    <p style="font-size:12px;color:#94A3B8">The token starts after #access_token= in the URL</p>
-    <script>
-      const hash = window.location.hash;
-      const token = hash.match(/access_token=([^&]+)/);
-      if(token) {
-        document.body.innerHTML += '<p style="background:#1E293B;padding:20px;border-radius:8px;word-break:break-all;color:#52B788"><strong>Your token:</strong><br>' + token[1] + '</p>';
-      }
-    </script>
-  </body></html>`);
-});
 // ── Health ───────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {
   res.json({

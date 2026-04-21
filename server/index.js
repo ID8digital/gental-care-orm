@@ -467,7 +467,8 @@ app.all("/webhook/manychat", async (req, res) => {
   const subscriber_id = req.body?.subscriber_id || req.query?.subscriber_id;
   const platform = req.body?.platform || req.query?.platform || "Facebook";
   const type = req.body?.type || req.query?.type || "dm";
-  if (!message || !subscriber_id) return;
+  log("info", "ManyChat webhook received", { subscriber_id, message_snippet: message?.slice(0,30), platform, type });
+  if (!message || !subscriber_id) { log("warn", "Missing message or subscriber_id", { subscriber_id, has_message: !!message }); return; }
   await processMessage({ message, context: { platform, type, senderId: subscriber_id, sourceId: subscriber_id } });
 });
 

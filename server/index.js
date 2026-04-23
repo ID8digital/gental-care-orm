@@ -169,7 +169,88 @@ Respond ONLY in this exact JSON (no markdown, no backticks):
 // ─────────────────────────────────────────────────────────────────────
 // CLAUDE CLASSIFIER
 // ─────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────
+// PGVECTOR KNOWLEDGE SEARCH
+// ─────────────────────────────────────────────────────────────────────
+function simpleEmbed(text) {
+  const vec = new Array(1536).fill(0);
+  for (let i = 0; i < text.length; i++) {
+    vec[i % 1536] += text.charCodeAt(i) / 1000;
+  }
+  const mag = Math.sqrt(vec.reduce((s, v) => s + v * v, 0));
+  return vec.map(v => v / (mag || 1));
+}
+
+async function searchKnowledge(message, brand = "ID8 Digital", limit = 5) {
+  if (!supabase) return [];
+  try {
+    const embedding = simpleEmbed(message);
+    const { data, error } = await supabase.rpc("match_knowledge", {
+      query_embedding: embedding,
+      match_brand: brand,
+      match_count: limit,
+    });
+    if (error || !data) {
+      // Fallback: keyword search if vector search fails
+      const { data: fallback } = await supabase
+        .from("knowledge_base")
+        .select("content, category")
+        .eq("brand", brand)
+        .limit(5);
+      return fallback || [];
+    }
+    return data;
+  } catch (err) {
+    log("warn", "Knowledge search failed", { error: err.message });
+    return [];
+  }
+}
+
 async function classifyWithClaude(message, context = {}) {
+  // Search knowledge base for relevant context
+  const brand = context.brand || "ID8 Digital";
+  const knowledgeChunks = await searchKnowledge(message, brand, 5);
+  const knowledgeContext = knowledgeChunks.length > 0
+    ? "RELEVANT BRAND KNOWLEDGE:\n" + knowledgeChunks.map(k => `[${k.category}] ${k.content}`).join("\n")
+    : "";
+
+  const systemPrompt = `You are the AI backend for ${brand}'s automated social media response system.
+
+CRITICAL RULES:
+1. Only respond about topics directly related to this brand.
+2. Never invent facts, prices, or information not stated in the knowledge below.
+3. If confidence is below 0.80, set action to escalate not auto_reply.
+4. If the query is ambiguous, set action to escalate.
+5. Return valid JSON only — no other text.
+
+${knowledgeContext}
+
+BRAND TONE: Sharp, confident, intelligent. Direct and professional. Sign off as "Team ID8" in DMs.
+
+ALWAYS ESCALATE (do NOT auto-reply):
+- Angry complaints about work quality
+- Legal threats or contract disputes
+- Media inquiries or journalist questions
+- Requests for confidential information
+- Financial disputes or billing issues
+
+AUTO-MODERATE (hide, no reply):
+- Spam, betting links, data bundle offers
+- Unrelated promotions or suspicious links
+
+Respond ONLY in this exact JSON (no markdown, no backticks):
+{
+  "intent": "<services|pricing|new_business|bfsi|ai_marketing|job|positive|greeting|portfolio|kenya|india|complaint|spam|unknown>",
+  "sentiment": "<positive|neutral|negative>",
+  "action": "<auto_reply|escalate|moderate|like>",
+  "priority": "<high|medium|low>",
+  "reply": "<reply text or null>",
+  "escalation_reason": "<one sentence or null>",
+  "escalation_tag": "<COMPLAINT|LEGAL|MEDIA|NEGATIVE|UNKNOWN or null>",
+  "confidence": 0.0
+}`;
+
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -180,7 +261,7 @@ async function classifyWithClaude(message, context = {}) {
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: 500,
-      system: BRAND_CONTEXT,
+      system: systemPrompt,
       messages: [{
         role: "user",
         content: `Platform: ${context.platform || "unknown"}\nType: ${context.type || "comment"}\nFrom: ${context.senderName || "unknown"}\nMessage: "${message}"\nClassify and respond.`
@@ -191,7 +272,17 @@ async function classifyWithClaude(message, context = {}) {
   if (!resp.ok) throw new Error(`Claude API ${resp.status}`);
   const data = await resp.json();
   const text = data.content[0].text.replace(/```json|```/g, "").trim();
-  return JSON.parse(text);
+  const result = JSON.parse(text);
+
+  // Confidence gate — escalate if below 0.80
+  if (result.confidence < 0.80 && result.action === "auto_reply") {
+    log("info", "Confidence below threshold — escalating", { confidence: result.confidence, intent: result.intent });
+    result.action = "escalate";
+    result.escalation_reason = result.escalation_reason || `Low confidence score: ${result.confidence}`;
+    result.escalation_tag = result.escalation_tag || "UNKNOWN";
+  }
+
+  return result;
 }
 
 // ─────────────────────────────────────────────────────────────────────

@@ -207,12 +207,61 @@ async function searchKnowledge(message, brand = "ID8 Digital", limit = 5) {
   }
 }
 
+
+// ─────────────────────────────────────────────────────────────────────
+// CONVERSATION MEMORY
+// ─────────────────────────────────────────────────────────────────────
+async function getConversationHistory(senderId, brand, platform, limit = 5) {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("conversation_history")
+      .select("role, message, created_at")
+      .eq("sender_id", senderId)
+      .eq("brand", brand)
+      .eq("platform", platform)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error || !data) return [];
+    return data.reverse(); // oldest first
+  } catch (err) {
+    log("warn", "Failed to fetch conversation history", { error: err.message });
+    return [];
+  }
+}
+
+async function saveConversationTurn(senderId, brand, platform, customerMessage, agentReply) {
+  if (!supabase) return;
+  try {
+    await supabase.from("conversation_history").insert([
+      { sender_id: senderId, brand, platform, role: "customer", message: customerMessage },
+      { sender_id: senderId, brand, platform, role: "agent", message: agentReply || "escalated" },
+    ]);
+  } catch (err) {
+    log("warn", "Failed to save conversation turn", { error: err.message });
+  }
+}
+
 async function classifyWithClaude(message, context = {}) {
   // Search knowledge base for relevant context
   const brand = context.brand || "ID8 Digital";
   const knowledgeChunks = await searchKnowledge(message, brand, 5);
   const knowledgeContext = knowledgeChunks.length > 0
     ? "RELEVANT BRAND KNOWLEDGE:\n" + knowledgeChunks.map(k => `[${k.category}] ${k.content}`).join("\n")
+    : "";
+
+  // Get conversation history for this customer
+  const history = await getConversationHistory(
+    context.senderId || "unknown",
+    brand,
+    context.platform || "Facebook",
+    5
+  );
+
+  const historyContext = history.length > 0
+    ? "\nCONVERSATION HISTORY (most recent last):\n" +
+      history.map(h => `${h.role === "customer" ? "Customer" : "Agent"}: ${h.message}`).join("\n") +
+      "\n(Use this history to understand context. If customer refers to something said before, use it.)"
     : "";
 
   const systemPrompt = `You are the AI backend for ${brand}'s automated social media response system.
@@ -420,6 +469,7 @@ async function processMessage({ message, context }) {
             await sendDM(subId, classification.reply);
             await tagSubscriber(subId, `ORM_${classification.intent.toUpperCase()}`);
             log("info", "DM sent via ManyChat", { intent: classification.intent });
+            await saveConversationTurn(context.senderId, context.brand || "ID8 Digital", context.platform, message, classification.reply);
           } catch(err) {
             log("warn", "ManyChat send failed", { error: err.message, senderId: context.senderId });
             try {

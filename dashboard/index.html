@@ -3,175 +3,252 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gental Care — ORM Live Dashboard</title>
+<title>ID8 ORM — Live Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --green: #2D6A4F; --green-l: #52B788; --green-p: #D8F3DC;
-  --dark: #0F172A; --mid: #1E293B; --surface: #FFFFFF;
-  --bg: #F8FAFC; --card: #FFFFFF;
-  --amber: #D97706; --amber-p: #FEF3C7;
-  --red: #DC2626; --red-p: #FEE2E2;
-  --blue: #2563EB; --blue-p: #EFF6FF;
-  --purple: #7C3AED; --purple-p: #F5F3FF;
-  --gray: #64748B; --border: #E2E8F0;
-  --text: #0F172A; --muted: #64748B;
-  --radius: 10px; --radius-lg: 16px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+:root{--green:#2D6A4F;--green-l:#52B788;--green-p:#D8F3DC;--dark:#0F172A;--mid:#1E293B;--surface:#fff;--bg:#F8FAFC;--card:#fff;--amber:#D97706;--amber-p:#FEF3C7;--red:#DC2626;--red-p:#FEE2E2;--blue:#2563EB;--blue-p:#EFF6FF;--purple:#7C3AED;--purple-p:#F5F3FF;--gray:#64748B;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--radius:10px;--radius-lg:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px}
 
-.layout { display: flex; height: 100vh; overflow: hidden; }
+/* LOGIN */
+#login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#F0FDF4 0%,#F8FAFC 100%)}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px 32px;width:380px;box-shadow:0 4px 24px rgba(15,23,42,0.06)}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.login-leaf{width:38px;height:38px;background:var(--green-l);border-radius:8px 8px 8px 2px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.login-title{font-family:'DM Serif Display',serif;font-size:18px}
+.login-sub{font-size:10px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-top:2px}
+.login-field{margin-bottom:12px}
+.login-label{font-size:12px;color:var(--muted);margin-bottom:5px;display:block}
+.login-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg);outline:none}
+.login-input:focus{border-color:var(--green-l)}
+.login-btn{width:100%;padding:11px;background:var(--green);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px}
+.login-btn:hover{background:var(--green-l)}
+.login-err{font-size:12px;color:var(--red);min-height:16px;margin-top:8px}
+.login-hint{font-size:11px;color:var(--muted);margin-top:14px;text-align:center;line-height:1.5}
+.login-hint a{color:var(--green);cursor:pointer;text-decoration:none}
+
+/* APP */
+#app{display:none}
+.layout{display:flex;height:100vh;overflow:hidden}
 
 /* SIDEBAR */
-.sidebar { width: 210px; background: var(--dark); flex-shrink: 0; display: flex; flex-direction: column; }
-.sb-brand { padding: 18px 16px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-.leaf { width: 30px; height: 30px; background: var(--green-l); border-radius: 7px 7px 7px 2px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin-bottom: 9px; }
-.sb-name { font-family: 'DM Serif Display', serif; font-size: 14px; color: #fff; }
-.sb-sub { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 2px; letter-spacing: .05em; text-transform: uppercase; }
-.nav { flex: 1; padding: 10px 8px; }
-.nav-s { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: .1em; text-transform: uppercase; padding: 10px 8px 4px; }
-.nav-i { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; cursor: pointer; color: rgba(255,255,255,0.5); font-size: 13px; border: none; background: transparent; width: 100%; text-align: left; margin-bottom: 2px; transition: all .13s; }
-.nav-i:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
-.nav-i.active { background: var(--green); color: #fff; font-weight: 500; }
-.nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
-.sb-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.07); font-size: 11px; color: rgba(255,255,255,0.35); display: flex; align-items: center; gap: 7px; }
-.dot { width: 6px; height: 6px; border-radius: 50%; }
-.dot-on { background: var(--green-l); box-shadow: 0 0 5px var(--green-l); }
-.dot-off { background: #94A3B8; }
+.sidebar{width:220px;background:var(--dark);flex-shrink:0;display:flex;flex-direction:column}
+.sb-brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.leaf{width:30px;height:30px;background:var(--green-l);border-radius:7px 7px 7px 2px;display:flex;align-items:center;justify-content:center;font-size:15px;margin-bottom:9px}
+.sb-name{font-family:'DM Serif Display',serif;font-size:14px;color:#fff}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px;letter-spacing:.05em;text-transform:uppercase}
+
+.brand-switch{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;position:relative}
+.brand-row{display:flex;align-items:center;gap:9px}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:#00E5A0}
+.brand-name-txt{font-size:12px;color:rgba(255,255,255,.85);flex:1}
+.brand-arr{color:rgba(255,255,255,.4);font-size:10px}
+.brand-dd{display:none;position:absolute;top:100%;left:8px;right:8px;background:var(--mid);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.brand-opt{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.85);display:flex;align-items:center;gap:8px}
+.brand-opt:hover{background:rgba(255,255,255,.06)}
+
+.nav{flex:1;padding:10px 8px;overflow-y:auto}
+.nav-s{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding:10px 8px 4px}
+.nav-i{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;color:rgba(255,255,255,.5);font-size:13px;border:none;background:transparent;width:100%;text-align:left;margin-bottom:2px;transition:all .13s}
+.nav-i:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-i.active{background:var(--green);color:#fff;font-weight:500}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px}
+.sb-footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:7px}
+.dot{width:6px;height:6px;border-radius:50%}
+.dot-on{background:var(--green-l);box-shadow:0 0 5px var(--green-l)}
+.dot-off{background:#94A3B8}
+.logout-btn{background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;margin-left:auto;font-family:'DM Sans',sans-serif}
+.logout-btn:hover{color:#fff;border-color:rgba(255,255,255,.4)}
 
 /* MAIN */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.topbar { height: 54px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 22px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-.tb-title { font-size: 15px; font-weight: 600; }
-.tb-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
-.tb-right { display: flex; gap: 8px; align-items: center; }
-.pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .12s; }
-.pill:hover { background: var(--bg); }
-.pill.green { background: var(--green); color: #fff; border-color: var(--green); }
-.content { flex: 1; overflow-y: auto; padding: 20px 22px; }
-.panel { display: none; }
-.panel.active { display: block; }
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:54px;background:var(--surface);border-bottom:1px solid var(--border);padding:0 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-title{font-size:15px;font-weight:600}
+.tb-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.tb-right{display:flex;gap:8px;align-items:center}
+.pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .12s}
+.pill:hover{background:var(--bg)}
+.pill.green{background:var(--green);color:#fff;border-color:var(--green)}
+.content{flex:1;overflow-y:auto;padding:20px 22px}
+.panel{display:none}
+.panel.active{display:block}
 
 /* METRICS */
-.metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
-.mc { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; position: relative; overflow: hidden; }
-.mc::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-.mc.g::before { background: var(--green-l); }
-.mc.b::before { background: var(--blue); }
-.mc.a::before { background: var(--amber); }
-.mc.r::before { background: var(--red); }
-.mc-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 5px; }
-.mc-val { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--dark); line-height: 1; }
-.mc-foot { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;position:relative;overflow:hidden}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.mc.g::before{background:var(--green-l)}.mc.b::before{background:var(--blue)}.mc.a::before{background:var(--amber)}.mc.r::before{background:var(--red)}
+.mc-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.mc-val{font-family:'DM Serif Display',serif;font-size:26px;color:var(--dark);line-height:1}
+.mc-foot{font-size:11px;color:var(--muted);margin-top:3px}
 
 /* CARDS */
-.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 14px; }
-.card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 14px; }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:14px}
+.card-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 
 /* FEED */
-.feed-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-.feed-item:last-child { border-bottom: none; }
-.feed-platform { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-.fp-fb { background: #E7F0FD; }
-.fp-ig { background: #FDE7F0; }
-.fp-tt { background: #E7F7FC; }
-.feed-body { flex: 1; min-width: 0; }
-.feed-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
-.feed-platform-name { font-size: 11px; font-weight: 600; color: var(--muted); }
-.feed-time { font-size: 10px; color: var(--muted); }
-.feed-type { font-size: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-.feed-msg { font-size: 13px; color: var(--text); margin-bottom: 5px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.feed-outcome { display: flex; gap: 6px; align-items: center; }
+.feed-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.feed-item:hover{background:var(--bg);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
+.feed-item:last-child{border-bottom:none}
+.feed-platform{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.fp-fb{background:#E7F0FD}.fp-ig{background:#FDE7F0}.fp-tt{background:#E7F7FC}
+.feed-body{flex:1;min-width:0}
+.feed-meta{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+.feed-platform-name{font-size:11px;font-weight:600;color:var(--muted)}
+.feed-time{font-size:10px;color:var(--muted)}
+.feed-type{font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.feed-msg{font-size:13px;color:var(--text);margin-bottom:5px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed-tags{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.feed-empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:13px}
 
 /* BADGES */
-.badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
-.b-reply { background: var(--blue-p); color: var(--blue); }
-.b-esc { background: var(--amber-p); color: var(--amber); }
-.b-mod { background: var(--purple-p); color: var(--purple); }
-.b-like { background: var(--green-p); color: var(--green); }
-.b-high { background: var(--red-p); color: var(--red); }
-.b-med { background: var(--amber-p); color: var(--amber); }
-.b-low { background: var(--green-p); color: var(--green); }
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500}
+.b-reply{background:var(--blue-p);color:var(--blue)}
+.b-esc{background:var(--amber-p);color:var(--amber)}
+.b-mod{background:var(--purple-p);color:var(--purple)}
+.b-like{background:var(--green-p);color:var(--green)}
+.b-pos{background:var(--green-p);color:var(--green)}
+.b-neg{background:var(--red-p);color:var(--red)}
+.b-neu{background:#F1F5F9;color:var(--muted)}
+.b-high{background:var(--red-p);color:var(--red)}
+.b-med{background:var(--amber-p);color:var(--amber)}
+.b-low{background:var(--green-p);color:var(--green)}
+.intent-tag{font-size:10px;background:var(--bg);color:var(--muted);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+.conf-badge{font-size:10px;padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace}
+.conf-high{background:var(--green-p);color:var(--green)}
+.conf-med{background:var(--amber-p);color:var(--amber)}
+.conf-low{background:var(--red-p);color:var(--red)}
 
 /* INTENT BARS */
-.ib-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,.04); }
-.ib-row:last-child { border-bottom: none; }
-.ib-name { font-size: 12px; width: 150px; flex-shrink: 0; }
-.ib-track { flex: 1; height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
-.ib-fill { height: 100%; border-radius: 3px; }
-.ib-count { font-size: 11px; color: var(--muted); width: 24px; text-align: right; }
+.ib-row{display:flex;align-items:center;gap:10px;padding:5px 0}
+.ib-name{font-size:12px;width:150px;flex-shrink:0;text-transform:capitalize}
+.ib-track{flex:1;height:5px;background:#F1F5F9;border-radius:3px;overflow:hidden}
+.ib-fill{height:100%;background:var(--blue);border-radius:3px}
+.ib-count{font-size:11px;color:var(--muted);width:24px;text-align:right}
 
-/* SENTIMENT */
-.sent-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 7px; }
-.sp { background: var(--green-l); }
-.sn { background: #94A3B8; }
-.sg { background: var(--red); }
-
-/* ESC CARDS */
-.esc-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 10px; }
-.esc-inner { display: flex; }
-.esc-stripe { width: 4px; flex-shrink: 0; }
-.esc-body { flex: 1; padding: 12px 14px; }
-.esc-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-.esc-msg { font-size: 13px; color: var(--text); font-style: italic; margin-bottom: 7px; line-height: 1.4; }
-.esc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-.esc-actions { padding: 9px 14px; background: var(--bg); border-top: 1px solid var(--border); display: flex; gap: 7px; }
-.btn-sm { padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--text); font-family: 'DM Sans', sans-serif; transition: all .1s; }
-.btn-sm:hover { background: var(--bg); }
-.btn-sm.g { background: var(--green); color: #fff; border-color: var(--green); }
-
-/* SETUP STEPS */
-.step { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
-.step:last-child { border-bottom: none; }
-.step-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; margin-top: 1px; }
-.step-content { flex: 1; }
-.step-title { font-size: 13px; font-weight: 600; color: var(--dark); margin-bottom: 5px; }
-.step-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
-.code-block { background: var(--dark); color: #94A3B8; border-radius: 8px; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; margin-top: 8px; line-height: 1.7; overflow-x: auto; }
-.code-block .h { color: #52B788; }
-.code-block .v { color: #F59E0B; }
-.code-block .s { color: #93C5FD; }
+/* SENTIMENT BAR */
+.sent-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:10px}
+.sp{background:var(--green-l)}.sn{background:#94A3B8}.sg{background:var(--red)}
+.sent-legend{display:flex;gap:14px;font-size:11px;color:var(--muted)}
+.sl-item{display:flex;align-items:center;gap:5px}
+.sl-dot{width:8px;height:8px;border-radius:50%}
 
 /* FILTERS */
-.filter-row { display: flex; gap: 7px; margin-bottom: 14px; flex-wrap: wrap; }
-.fb { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--muted); font-family: 'DM Sans', sans-serif; transition: all .12s; }
-.fb:hover { background: var(--bg); }
-.fb.active { background: var(--green); color: #fff; border-color: var(--green); }
+.filter-row{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.fb{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .12s}
+.fb:hover{background:var(--bg)}
+.fb.active{background:var(--green);color:#fff;border-color:var(--green)}
 
-/* LIVE INDICATOR */
-.live-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green-l); }
-.live-pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green-l); animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.2)} }
+/* ESC CARDS */
+.esc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:10px;transition:opacity .2s}
+.esc-inner{display:flex}
+.esc-stripe{width:4px;flex-shrink:0}
+.esc-body{flex:1;padding:12px 14px}
+.esc-meta{display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap}
+.esc-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.esc-msg{font-size:13px;color:var(--text);font-style:italic;margin-bottom:7px;line-height:1.4}
+.esc-actions{padding:9px 14px;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:7px}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text);font-family:'DM Sans',sans-serif;transition:all .1s}
+.btn-sm:hover{background:var(--bg)}
+.btn-sm.primary{background:var(--green);color:#fff;border-color:var(--green)}
 
-/* CONFIG INPUTS */
-.cfg-input { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--bg); outline: none; margin-bottom: 10px; }
-.cfg-input:focus { border-color: var(--green-l); }
-.cfg-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; display: block; }
+/* KB */
+.kb-search{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--bg);outline:none;margin-bottom:12px}
+.kb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.kb-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.kb-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.kb-cat{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--green)}
+.kb-content{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:8px}
+.kb-actions{display:flex;gap:6px}
+
+/* CONFIG */
+.cfg-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg);outline:none;margin-bottom:10px}
+.cfg-input:focus{border-color:var(--green-l)}
+.cfg-label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block}
+
+/* LIVE */
+.live-dot{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--green-l)}
+.live-pulse{width:7px;height:7px;border-radius:50%;background:var(--green-l);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.2)}}
+
+/* MODALS */
+.modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);align-items:center;justify-content:center;z-index:1000}
+.modal.active{display:flex}
+.modal-box{background:#fff;border-radius:16px;width:520px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-title{font-family:'DM Serif Display',serif;font-size:16px}
+.modal-close{background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--muted)}
+.modal-body{padding:18px 20px;overflow-y:auto}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:7px}
+.conv-bubble{padding:10px 14px;border-radius:12px;margin-bottom:8px;font-size:13px;line-height:1.5;max-width:85%}
+.conv-customer{background:var(--bg);align-self:flex-start;border-bottom-left-radius:4px}
+.conv-agent{background:var(--green-p);color:var(--green);margin-left:auto;border-bottom-right-radius:4px}
+.conv-time{font-size:10px;color:var(--muted);margin-bottom:3px}
+.conv-wrap{display:flex;flex-direction:column}
 </style>
 </head>
 <body>
 
+<!-- ── LOGIN PAGE ── -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-leaf">🌿</div>
+      <div>
+        <div class="login-title">ID8 ORM</div>
+        <div class="login-sub">Live Dashboard</div>
+      </div>
+    </div>
+    <div class="login-field">
+      <label class="login-label">Email</label>
+      <input class="login-input" id="login-email" type="email" placeholder="you@id8.digital" />
+    </div>
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <input class="login-input" id="login-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-hint">First time here? <a onclick="showCfgFromLogin()">Configure Supabase →</a></div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
 <div class="layout">
   <div class="sidebar">
     <div class="sb-brand">
       <div class="leaf">🌿</div>
-      <div class="sb-name">Gental Care ORM</div>
-      <div class="sb-sub">Live Dashboard</div>
+      <div class="sb-name">ID8 ORM</div>
+      <div class="sb-sub">Intelligence Platform</div>
+    </div>
+    <div class="brand-switch" onclick="toggleBrandDD()">
+      <div class="brand-row">
+        <div class="brand-dot" id="brand-dot"></div>
+        <span class="brand-name-txt" id="brand-name-label">ID8 Digital</span>
+        <span class="brand-arr">▾</span>
+      </div>
+      <div class="brand-dd" id="brand-dd">
+        <div class="brand-opt" onclick="event.stopPropagation();selectBrand('id8','ID8 Digital','#00E5A0')"><div class="brand-dot" style="background:#00E5A0"></div>ID8 Digital</div>
+        <div class="brand-opt" onclick="event.stopPropagation();selectBrand('gental_care','Gental Care','#52B788')"><div class="brand-dot" style="background:#52B788"></div>Gental Care</div>
+        <div class="brand-opt" onclick="event.stopPropagation();selectBrand('all','All brands','#94A3B8')"><div class="brand-dot" style="background:#94A3B8"></div>All brands</div>
+      </div>
     </div>
     <nav class="nav">
       <div class="nav-s">Monitoring</div>
-      <button class="nav-i active" onclick="show('live',this)"><span>📡</span> Live feed</button>
-      <button class="nav-i" onclick="show('sentiment',this)"><span>📊</span> Sentiment</button>
-      <button class="nav-i" onclick="show('escalations',this)"><span>🎫</span> Escalations <span class="nav-badge" id="esc-badge">8</span></button>
-      <div class="nav-s">System</div>
-      <button class="nav-i" onclick="show('setup',this)"><span>🚀</span> Deployment guide</button>
-      <button class="nav-i" onclick="show('config',this)"><span>⚙️</span> Configuration</button>
+      <button class="nav-i active" onclick="showPanel('live',this)"><span>📡</span> Live feed</button>
+      <button class="nav-i" onclick="showPanel('sentiment',this)"><span>📊</span> Sentiment</button>
+      <button class="nav-i" onclick="showPanel('escalations',this)"><span>🎫</span> Escalations <span class="nav-badge" id="esc-badge">0</span></button>
+      <div class="nav-s">Manage</div>
+      <button class="nav-i" onclick="showPanel('knowledge',this)"><span>🧠</span> Knowledge base</button>
+      <button class="nav-i" onclick="showPanel('config',this)"><span>⚙️</span> Configuration</button>
     </nav>
     <div class="sb-footer">
-      <div class="dot dot-on" id="sys-dot"></div>
-      <span id="sys-status">Engine online</span>
+      <div class="dot dot-off" id="sys-dot"></div>
+      <span id="sys-status">Connecting…</span>
+      <button class="logout-btn" onclick="doLogout()">Log out</button>
     </div>
   </div>
 
@@ -179,190 +256,102 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     <div class="topbar">
       <div>
         <div class="tb-title" id="page-title">Live feed</div>
-        <div class="tb-sub">Gental Care · Bidco Africa · Auto-processing all channels</div>
+        <div class="tb-sub" id="page-sub">Auto-processing all channels</div>
       </div>
       <div class="tb-right">
-        <div class="live-dot"><div class="live-pulse"></div> Auto-processing on</div>
-        <button class="pill green" onclick="show('setup', document.querySelectorAll('.nav-i')[3])">🚀 Deploy now</button>
+        <div class="live-dot"><div class="live-pulse"></div> <span id="live-time">—</span></div>
       </div>
     </div>
 
     <div class="content">
 
-      <!-- ── LIVE FEED ── -->
+      <!-- LIVE FEED -->
       <div class="panel active" id="panel-live">
         <div class="metrics">
-          <div class="mc g"><div class="mc-label">Processed today</div><div class="mc-val" id="m-total">0</div><div class="mc-foot">All channels</div></div>
+          <div class="mc g"><div class="mc-label">Processed</div><div class="mc-val" id="m-total">0</div><div class="mc-foot">All time, all channels</div></div>
           <div class="mc b"><div class="mc-label">Auto-replied</div><div class="mc-val" id="m-replied">0</div><div class="mc-foot">No human needed</div></div>
-          <div class="mc a"><div class="mc-label">Escalated</div><div class="mc-val" id="m-esc">0</div><div class="mc-foot">Zoho Desk tickets</div></div>
+          <div class="mc a"><div class="mc-label">Escalated</div><div class="mc-val" id="m-esc">0</div><div class="mc-foot">Needs review</div></div>
           <div class="mc r"><div class="mc-label">Moderated</div><div class="mc-val" id="m-mod">0</div><div class="mc-foot">Spam hidden</div></div>
         </div>
-
+        <div class="filter-row" id="platform-filters">
+          <button class="fb active" onclick="filterPlatform('all',this)">All platforms</button>
+          <button class="fb" onclick="filterPlatform('Facebook',this)">📘 Facebook</button>
+          <button class="fb" onclick="filterPlatform('Instagram',this)">📸 Instagram</button>
+          <button class="fb" onclick="filterPlatform('TikTok',this)">🎵 TikTok</button>
+        </div>
         <div class="card">
-          <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
-            Recent messages
-            <div class="live-dot" style="font-size:11px"><div class="live-pulse"></div> Processing automatically</div>
+          <div class="card-title">
+            <span>Recent messages</span>
+            <div class="live-dot" style="font-size:11px"><div class="live-pulse"></div> Realtime</div>
           </div>
-          <div id="feed-list">
-            <!-- Simulated feed entries -->
-          </div>
+          <div id="feed-list"><div class="feed-empty">Loading…</div></div>
         </div>
       </div>
 
-      <!-- ── SENTIMENT ── -->
+      <!-- SENTIMENT -->
       <div class="panel" id="panel-sentiment">
-        <div class="metrics">
-          <div class="mc g"><div class="mc-label">Sentiment score</div><div class="mc-val">72</div><div class="mc-foot">Out of 100 · trending ↑</div></div>
-          <div class="mc b"><div class="mc-label">Positive</div><div class="mc-val">58%</div><div class="mc-foot">108 of 187 queries</div></div>
-          <div class="mc a"><div class="mc-label">Neutral</div><div class="mc-val">32%</div><div class="mc-foot">60 queries</div></div>
-          <div class="mc r"><div class="mc-label">Negative</div><div class="mc-val">10%</div><div class="mc-foot">19 queries — monitored</div></div>
+        <div class="card">
+          <div class="card-title"><span>Overall sentiment</span></div>
+          <div class="sent-bar" id="sent-bar"></div>
+          <div class="sent-legend" id="sent-legend"></div>
         </div>
         <div class="two-col">
           <div class="card">
-            <div class="card-title">Platform breakdown</div>
-            <div style="margin-bottom:14px">
-              <div style="font-size:12px;font-weight:600;margin-bottom:5px">Facebook</div>
-              <div class="sent-bar"><div class="sp" style="width:60%"></div><div class="sn" style="width:30%"></div><div class="sg" style="width:10%"></div></div>
-              <div style="font-size:11px;color:var(--muted)">60% positive · 30% neutral · 10% negative</div>
-            </div>
-            <div style="margin-bottom:14px">
-              <div style="font-size:12px;font-weight:600;margin-bottom:5px">Instagram</div>
-              <div class="sent-bar"><div class="sp" style="width:54%"></div><div class="sn" style="width:35%"></div><div class="sg" style="width:11%"></div></div>
-              <div style="font-size:11px;color:var(--muted)">54% positive · 35% neutral · 11% negative</div>
-            </div>
-            <div>
-              <div style="font-size:12px;font-weight:600;margin-bottom:5px">TikTok</div>
-              <div class="sent-bar"><div class="sp" style="width:70%"></div><div class="sn" style="width:25%"></div><div class="sg" style="width:5%"></div></div>
-              <div style="font-size:11px;color:var(--muted)">70% positive · 25% neutral · 5% negative</div>
-            </div>
+            <div class="card-title"><span>Daily trend (last 14)</span></div>
+            <div id="trend-list"><div class="feed-empty">Loading…</div></div>
           </div>
           <div class="card">
-            <div class="card-title">Intent volume</div>
-            <div class="ib-row"><span class="ib-name">Partnerships & PR</span><div class="ib-track"><div class="ib-fill" style="width:100%;background:#2563EB"></div></div><span class="ib-count">42</span></div>
-            <div class="ib-row"><span class="ib-name">General greeting</span><div class="ib-track"><div class="ib-fill" style="width:90%;background:var(--green-l)"></div></div><span class="ib-count">38</span></div>
-            <div class="ib-row"><span class="ib-name">Product inquiry</span><div class="ib-track"><div class="ib-fill" style="width:74%;background:#7C3AED"></div></div><span class="ib-count">31</span></div>
-            <div class="ib-row"><span class="ib-name">Stock/availability</span><div class="ib-track"><div class="ib-fill" style="width:62%;background:var(--amber)"></div></div><span class="ib-count">26</span></div>
-            <div class="ib-row"><span class="ib-name">Product quality</span><div class="ib-track"><div class="ib-fill" style="width:36%;background:var(--red)"></div></div><span class="ib-count">15</span></div>
-            <div class="ib-row"><span class="ib-name">Online orders</span><div class="ib-track"><div class="ib-fill" style="width:31%;background:#1D9E75"></div></div><span class="ib-count">13</span></div>
-            <div class="ib-row"><span class="ib-name">Job inquiries</span><div class="ib-track"><div class="ib-fill" style="width:21%;background:#94A3B8"></div></div><span class="ib-count">9</span></div>
+            <div class="card-title"><span>Intent volume</span></div>
+            <div id="intent-list"><div class="feed-empty">Loading…</div></div>
           </div>
         </div>
       </div>
 
-      <!-- ── ESCALATIONS ── -->
+      <!-- ESCALATIONS -->
       <div class="panel" id="panel-escalations">
         <div class="filter-row">
-          <button class="fb active" onclick="filterEsc('all',this)">All (8)</button>
-          <button class="fb" onclick="filterEsc('quality',this)">Product quality (4)</button>
-          <button class="fb" onclick="filterEsc('stock',this)">Stock issues (2)</button>
-          <button class="fb" onclick="filterEsc('negative',this)">High-negative (2)</button>
+          <button class="fb active" onclick="filterEsc('all',this)">All</button>
+          <button class="fb" onclick="filterEsc('open',this)">Open</button>
+          <button class="fb" onclick="filterEsc('resolved',this)">Resolved</button>
         </div>
-        <div id="esc-list"></div>
+        <div id="esc-list"><div class="feed-empty">Loading…</div></div>
       </div>
 
-      <!-- ── SETUP ── -->
-      <div class="panel" id="panel-setup">
-        <div class="card">
-          <div class="card-title">Deployment guide — step by step</div>
-          <div class="step">
-            <div class="step-num" style="background:var(--green)">1</div>
-            <div class="step-content">
-              <div class="step-title">Deploy the server to Render (free tier works for pilot)</div>
-              <div class="step-desc">Push the <code>gental-care-orm/</code> folder to a GitHub repo. Go to render.com → New Web Service → connect your repo. Render auto-detects the <code>render.yaml</code> config. Set region to Singapore (closest to Kenya).</div>
-              <div class="code-block"><span class="h"># Your live webhook URL will be:</span><br><span class="s">https://gental-care-orm-engine.onrender.com/webhook/meta</span><br><span class="s">https://gental-care-orm-engine.onrender.com/webhook/tiktok</span><br><span class="s">https://gental-care-orm-engine.onrender.com/health</span></div>
-            </div>
+      <!-- KNOWLEDGE BASE -->
+      <div class="panel" id="panel-knowledge">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div>
+            <div style="font-size:13px;font-weight:600">Knowledge entries</div>
+            <div style="font-size:11px;color:var(--muted)" id="kb-count">—</div>
           </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--blue)">2</div>
-            <div class="step-content">
-              <div class="step-title">Set environment variables in Render dashboard</div>
-              <div class="step-desc">In Render → your service → Environment. Add all values from <code>.env.example</code>. Start with just ANTHROPIC_API_KEY and META_* — Zoho and TikTok can come later.</div>
-              <div class="code-block">
-                <span class="h">Required for MVP:</span><br>
-                <span class="v">ANTHROPIC_API_KEY</span>=<span class="s">sk-ant-...</span><br>
-                <span class="v">META_APP_SECRET</span>=<span class="s">from Meta Developer portal</span><br>
-                <span class="v">META_PAGE_ACCESS_TOKEN</span>=<span class="s">long-lived page token</span><br>
-                <span class="v">META_VERIFY_TOKEN</span>=<span class="s">gental_care_webhook_2025</span>
-              </div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--purple)">3</div>
-            <div class="step-content">
-              <div class="step-title">Create a Meta Developer App and connect the Gental Care page</div>
-              <div class="step-desc">Go to developers.facebook.com → Create App → Business type. Add "Webhooks" product. In Webhooks → Page → Subscribe to: <strong>messages, feed, mention</strong>. For Instagram: add "Instagram Graph API" → subscribe to <strong>comments, messages</strong>. Enter your Render webhook URL and verify token.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--amber)">4</div>
-            <div class="step-content">
-              <div class="step-title">Generate a long-lived Page Access Token</div>
-              <div class="step-desc">In Meta → Graph API Explorer → select your Page → get token → extend it via the token debugger (60-day tokens expire — automate renewal or use a System User token which never expires). This token lets the engine post replies and hide comments on behalf of the page.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--red)">5</div>
-            <div class="step-content">
-              <div class="step-title">Connect Zoho Desk for escalation tickets</div>
-              <div class="step-desc">Zoho Desk → Settings → Developer Space → Self Client → Generate OAuth token with scope <code>Desk.tickets.CREATE, Desk.tickets.READ</code>. Add ZOHO_OAUTH_TOKEN, ZOHO_ORG_ID, ZOHO_DEPARTMENT_ID to Render. Tickets auto-create with tag, priority, and full context.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--gray)">6</div>
-            <div class="step-content">
-              <div class="step-title">TikTok (add after Meta pilot is stable)</div>
-              <div class="step-desc">TikTok for Developers → create app → request Comment API scope. TikTok requires app review (1–3 weeks). Once approved, add TIKTOK_ACCESS_TOKEN to Render. Note: TikTok's API only supports comments on your own videos — no DMs via API currently.</div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="step-num" style="background:var(--green)">7</div>
-            <div class="step-content">
-              <div class="step-title">Test end-to-end before going live</div>
-              <div class="step-desc">Comment on a Gental Care post from a test account. Check Render logs to see the webhook fire, Claude classify it, and the reply post back. Check <code>/health</code> endpoint shows all integrations as connected. Run the local test suite first: <code>cd server && node test-local.js</code></div>
-            </div>
-          </div>
+          <button class="pill green" onclick="openKBModal()">+ Add knowledge</button>
         </div>
-        <div class="card" style="background:#FFFBEB;border-color:#FDE68A">
-          <div class="card-title" style="color:var(--amber)">⚠ Meta app review note</div>
-          <div style="font-size:13px;color:#92400E;line-height:1.6">For posting replies to comments and DMs on behalf of a Page, Meta requires the <strong>pages_manage_engagement</strong> and <strong>pages_messaging</strong> permissions. These go through Meta's App Review process (typically 1–5 business days). In the meantime, the engine can receive and classify webhooks — it just can't post replies until approved. You can test everything in Development Mode using only the Page admin's account.</div>
-        </div>
+        <input class="kb-search" id="kb-search" placeholder="Search knowledge…" oninput="searchKB(this.value)" />
+        <div class="filter-row" id="kb-filters"></div>
+        <div class="kb-grid" id="kb-list"><div class="feed-empty">Loading…</div></div>
       </div>
 
-      <!-- ── CONFIG ── -->
+      <!-- CONFIG -->
       <div class="panel" id="panel-config">
-        <div class="two-col">
-          <div class="card">
-            <div class="card-title">Server URL (after Render deploy)</div>
-            <label class="cfg-label">Your deployed URL</label>
-            <input class="cfg-input" id="server-url" placeholder="https://gental-care-orm-engine.onrender.com" />
-            <button class="pill green" onclick="checkHealth()">Check health →</button>
-            <div id="health-result" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
-          </div>
-          <div class="card">
-            <div class="card-title">Integration status</div>
-            <div id="integration-status">
-              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Claude API</span><span id="s-claude" style="color:var(--muted)">—</span></div>
-              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Meta (FB + IG)</span><span id="s-meta" style="color:var(--muted)">—</span></div>
-              <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px"><span>Zoho Desk</span><span id="s-zoho" style="color:var(--muted)">—</span></div>
-              <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px"><span>TikTok</span><span id="s-tiktok" style="color:var(--muted)">—</span></div>
-            </div>
-          </div>
+        <div class="card">
+          <div class="card-title"><span>Supabase connection</span></div>
+          <label class="cfg-label">Supabase URL</label>
+          <input class="cfg-input" id="cfg-url" placeholder="https://xxxxx.supabase.co" />
+          <label class="cfg-label">Supabase anon key (long string from Supabase → Settings → API)</label>
+          <input class="cfg-input" id="cfg-key" placeholder="eyJhbGciOi..." />
+          <label class="cfg-label">Engine URL (Render)</label>
+          <input class="cfg-input" id="cfg-engine" placeholder="https://gental-care-orm.onrender.com" />
+          <button class="pill green" onclick="saveConfig()">Save & reload</button>
+          <button class="pill" onclick="checkEngine()" style="margin-left:6px">Check engine health</button>
+          <div id="cfg-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+          <div id="engine-status" style="margin-top:6px;font-size:12px;color:var(--muted)"></div>
         </div>
         <div class="card">
-          <div class="card-title">What to hand off to your team</div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg);border-radius:8px">
-              <span style="font-size:16px;flex-shrink:0">📁</span>
-              <div><div style="font-size:13px;font-weight:600;margin-bottom:3px">Files to hand to tech person</div><div style="font-size:12px;color:var(--muted)">The <code>gental-care-orm/</code> folder (GitHub repo). They push to GitHub, create Render service, set env vars. ~2 hours of work.</div></div>
-            </div>
-            <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg);border-radius:8px">
-              <span style="font-size:16px;flex-shrink:0">🖥</span>
-              <div><div style="font-size:13px;font-weight:600;margin-bottom:3px">For your team manager</div><div style="font-size:12px;color:var(--muted)">This dashboard HTML file. Open in browser, point to the Render server URL. Shows live feed, escalations, and sentiment — no coding required.</div></div>
-            </div>
-            <div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg);border-radius:8px">
-              <span style="font-size:16px;flex-shrink:0">🎫</span>
-              <div><div style="font-size:13px;font-weight:600;margin-bottom:3px">For the social team</div><div style="font-size:12px;color:var(--muted)">Escalated queries appear in Zoho Desk automatically. They respond to tickets there, not on the platform directly. The system handles everything else.</div></div>
-            </div>
+          <div class="card-title"><span>Where things live</span></div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7">
+            <strong style="color:var(--text)">This dashboard</strong> reads from your Supabase tables (messages, escalations, knowledge_base, sentiment_daily) and uses Supabase Auth for login.<br><br>
+            <strong style="color:var(--text)">The engine</strong> on Render receives Facebook/Instagram webhooks via ManyChat, classifies with Claude, and writes results to the same Supabase. The dashboard never talks to Render directly except for the health check.<br><br>
+            <strong style="color:var(--text)">To add a user</strong>, go to Supabase → Authentication → Users → Add user.
           </div>
         </div>
       </div>
@@ -370,136 +359,550 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
     </div>
   </div>
 </div>
+</div>
+
+<!-- CONVERSATION MODAL -->
+<div class="modal" id="conv-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="conv-modal-title">Conversation</div>
+      <button class="modal-close" onclick="closeConvModal()">✕</button>
+    </div>
+    <div class="modal-body" id="conv-modal-body"></div>
+  </div>
+</div>
+
+<!-- KB MODAL -->
+<div class="modal" id="kb-modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="kb-modal-title">Add knowledge</div>
+      <button class="modal-close" onclick="closeKBModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="kb-edit-id" />
+      <label class="cfg-label">Brand</label>
+      <input class="cfg-input" id="kb-brand" value="ID8 Digital" />
+      <label class="cfg-label">Category</label>
+      <input class="cfg-input" id="kb-category" value="general" placeholder="e.g. pricing, hours, products" />
+      <label class="cfg-label">Content</label>
+      <textarea class="cfg-input" id="kb-content" rows="6" style="resize:vertical;font-family:'DM Sans',sans-serif" placeholder="The information the AI should know about this topic…"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="pill" onclick="closeKBModal()">Cancel</button>
+      <button class="pill green" onclick="saveKBEntry()">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
-const TITLES = {
-  live: 'Live feed',
-  sentiment: 'Sentiment analytics',
-  escalations: 'Escalations — open tickets',
-  setup: 'Deployment guide',
-  config: 'Configuration'
-};
+// ===========================================================================
+// CONFIG — pulled from localStorage (set in Configuration panel)
+// ===========================================================================
+const SUPABASE_URL = localStorage.getItem('sb_url') || '';
+const SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+const ENGINE_URL   = localStorage.getItem('engine_url') || '';
 
-function show(name, btn) {
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-i').forEach(n => n.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
-  if (btn) btn.classList.add('active');
-  document.getElementById('page-title').textContent = TITLES[name] || name;
-  if (name === 'escalations') renderEsc('all');
+let sb = null;
+let currentBrand = 'id8';
+let currentPlatform = 'all';
+let allKBEntries = [];
+let currentEscFilter = 'all';
+
+function initSb(url, key) {
+  if (!url || !key) return false;
+  try { sb = supabase.createClient(url, key); return true; } catch(e) { console.error(e); return false; }
 }
 
-// ── SIMULATED LIVE FEED ───────────────────────────────────────────────
-const FEED_DATA = [
-  { platform: 'Facebook', type: 'comment', msg: 'Where can I buy Gental Care diapers in Westlands?', action: 'auto_reply', intent: 'stock', time: '2m ago' },
-  { platform: 'Instagram', type: 'dm', msg: 'I would love to collaborate with Gental Care as an influencer', action: 'auto_reply', intent: 'partnership', time: '5m ago' },
-  { platform: 'Facebook', type: 'ad_comment', msg: 'How much is the 62pcs midi pants?', action: 'auto_reply', intent: 'pricing', time: '8m ago' },
-  { platform: 'Facebook', type: 'comment', msg: 'Ukiwa na hii form gamepawa 600shs daily link hapa', action: 'moderate', intent: 'spam', time: '12m ago' },
-  { platform: 'Instagram', type: 'comment', msg: 'The waistband on the diaper keeps tearing when I put it on', action: 'escalate', intent: 'quality', time: '18m ago' },
-  { platform: 'Facebook', type: 'comment', msg: 'The best diaper in the market 💯💯', action: 'like', intent: 'positive', time: '25m ago' },
-  { platform: 'TikTok', type: 'comment', msg: 'Are these available in Mombasa?', action: 'auto_reply', intent: 'stock', time: '31m ago' },
-  { platform: 'Instagram', type: 'dm', msg: 'Can I buy online and get delivery to Kisumu?', action: 'auto_reply', intent: 'online_order', time: '45m ago' },
-];
-
-const PF_ICONS = { Facebook: '📘', Instagram: '📸', TikTok: '🎵' };
-const PF_CLASS = { Facebook: 'fp-fb', Instagram: 'fp-ig', TikTok: 'fp-tt' };
-const ACTION_BADGE = {
-  auto_reply: '<span class="badge b-reply">✅ Auto-replied</span>',
-  escalate: '<span class="badge b-esc">🎫 Zoho ticket</span>',
-  moderate: '<span class="badge b-mod">🟣 Hidden</span>',
-  like: '<span class="badge" style="background:var(--green-p);color:var(--green)">💚 Liked</span>',
-};
-
-function renderFeed() {
-  const list = document.getElementById('feed-list');
-  let replied = 0, esc = 0, mod = 0;
-  list.innerHTML = FEED_DATA.map(item => {
-    if (item.action === 'auto_reply') replied++;
-    if (item.action === 'escalate') esc++;
-    if (item.action === 'moderate') mod++;
-    return `<div class="feed-item">
-      <div class="feed-platform ${PF_CLASS[item.platform]}">${PF_ICONS[item.platform]}</div>
-      <div class="feed-body">
-        <div class="feed-meta">
-          <span class="feed-platform-name">${item.platform}</span>
-          <span class="feed-type">${item.type}</span>
-          <span class="feed-time">${item.time}</span>
-        </div>
-        <div class="feed-msg">${item.msg}</div>
-        <div class="feed-outcome">${ACTION_BADGE[item.action] || ''}</div>
-      </div>
-    </div>`;
-  }).join('');
-  document.getElementById('m-total').textContent = FEED_DATA.length;
-  document.getElementById('m-replied').textContent = replied;
-  document.getElementById('m-esc').textContent = esc;
-  document.getElementById('m-mod').textContent = mod;
-}
-
-// ── ESCALATIONS ───────────────────────────────────────────────────────
-const ESC = [
-  { id:'GC-0041', type:'quality', platform:'Instagram DM', msg:'Hi, I\'m a new mum. To be honest, the diapers leak every time.', priority:'high', date:'31 Jul 2025', tag:'QUALITY · LEAK' },
-  { id:'GC-0082', type:'quality', platform:'Facebook DM', msg:'Your diaper is good but the waistband is weak — it tears when putting it on.', priority:'high', date:'4 Sep 2025', tag:'QUALITY · WAISTBAND' },
-  { id:'GC-0097', type:'negative', platform:'Instagram DM', msg:'Hey what happened to the Gental washing machine powder? Can\'t find it anywhere.', priority:'medium', date:'11 Aug 2025', tag:'STOCK · DETERGENT' },
-  { id:'GC-0103', type:'stock', platform:'Facebook Comment', msg:'Nimetafuta hadi nimechoka — Sam West, Quickmart, Carrefour — hakuna machine wash powder.', priority:'medium', date:'16 Sep 2025', tag:'STOCK · POWDER' },
-  { id:'GC-0118', type:'quality', platform:'Facebook DM', msg:'Packet reads 12–17 kg but the diaper is too small — very inconsistent.', priority:'high', date:'8 Aug 2025', tag:'QUALITY · SIZING' },
-  { id:'GC-0139', type:'negative', platform:'Facebook Comment', msg:'This diaper made me cry.', priority:'high', date:'11 Mar 2026', tag:'NEGATIVE · SENTIMENT' },
-  { id:'GC-0144', type:'stock', platform:'Facebook Comment', msg:'Cannot find size 5 pants — been to Quickmart Ruiru three times now.', priority:'medium', date:'27 Oct 2025', tag:'STOCK · SIZE5' },
-  { id:'GC-0112', type:'negative', platform:'Facebook Comment', msg:'You never announced the winners of the father\'s day contest — three times asking.', priority:'low', date:'26 Jun 2025', tag:'CONTEST · UNRESOLVED' },
-];
-
-const STRIPE = { quality:'var(--red)', stock:'var(--amber)', negative:'#E67E22' };
-
-function filterEsc(type, btn) {
-  document.querySelectorAll('.fb').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  const data = type === 'all' ? ESC : ESC.filter(e => e.type === type);
-  const list = document.getElementById('esc-list');
-  list.innerHTML = data.map(e => `
-    <div class="esc-card">
-      <div class="esc-inner">
-        <div class="esc-stripe" style="background:${STRIPE[e.type]||'var(--gray)'}"></div>
-        <div class="esc-body">
-          <div class="esc-id">${e.id} · ${e.platform} · ${e.date}</div>
-          <div class="esc-msg">"${e.msg}"</div>
-          <div class="esc-tags">
-            <span class="badge b-${e.priority === 'high' ? 'high' : e.priority === 'medium' ? 'med' : 'low'}">${e.priority} priority</span>
-            <span style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">${e.tag}</span>
-          </div>
-        </div>
-      </div>
-      <div class="esc-actions">
-        <button class="btn-sm g" onclick="alert('In the live system, this calls Claude to draft a response for the agent to review and send.')">✍ Draft reply</button>
-        <button class="btn-sm" onclick="this.closest('.esc-card').style.opacity='.4';document.getElementById('esc-badge').textContent=Math.max(0,parseInt(document.getElementById('esc-badge').textContent)-1)">✓ Resolve</button>
-        <button class="btn-sm">↗ Open in Zoho Desk</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-// ── HEALTH CHECK ─────────────────────────────────────────────────────
-async function checkHealth() {
-  const url = document.getElementById('server-url').value.trim();
-  if (!url) { document.getElementById('health-result').textContent = 'Enter your server URL first'; return; }
-  document.getElementById('health-result').textContent = 'Checking...';
+// ===========================================================================
+// AUTH (Supabase) — copied from working dashboard
+// ===========================================================================
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  const err = document.getElementById('login-err');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = 'Please enter email and password'; return; }
+  if (!sb && !initSb(SUPABASE_URL, SUPABASE_KEY)) {
+    err.textContent = 'Supabase not configured. Click "Configure Supabase →" below.'; return;
+  }
   try {
-    const resp = await fetch(url + '/health');
-    const data = await resp.json();
-    const s = data.config;
-    document.getElementById('s-claude').innerHTML = s.claude ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--red)">✗ Not set</span>';
-    document.getElementById('s-meta').innerHTML = s.meta ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--red)">✗ Not set</span>';
-    document.getElementById('s-zoho').innerHTML = s.zoho ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--amber)">⚠ Optional</span>';
-    document.getElementById('s-tiktok').innerHTML = s.tiktok ? '<span style="color:var(--green)">✓ Connected</span>' : '<span style="color:var(--amber)">⚠ Optional</span>';
-    document.getElementById('health-result').innerHTML = '<span style="color:var(--green)">✓ Engine online</span>';
-    document.getElementById('sys-dot').className = 'dot dot-on';
-    document.getElementById('sys-status').textContent = 'Engine online';
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    showApp();
   } catch(e) {
-    document.getElementById('health-result').innerHTML = '<span style="color:var(--red)">✗ Cannot reach server — is it deployed?</span>';
+    err.textContent = e.message || 'Login failed';
   }
 }
 
-renderFeed();
-renderEsc('all');
+async function doLogout() {
+  if (sb) await sb.auth.signOut();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+}
+
+async function checkSession() {
+  if (!sb && !initSb(SUPABASE_URL, SUPABASE_KEY)) return;
+  const { data } = await sb.auth.getSession();
+  if (data.session) showApp();
+}
+
+function showApp() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  updateLiveTime();
+  setInterval(updateLiveTime, 30000);
+  loadAll();
+  setInterval(loadAll, 30000);
+  subscribeRealtime();
+  setSystemStatus(true);
+}
+
+function updateLiveTime() {
+  const el = document.getElementById('live-time');
+  if (el) el.textContent = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+function setSystemStatus(online) {
+  document.getElementById('sys-dot').className = online ? 'dot dot-on' : 'dot dot-off';
+  document.getElementById('sys-status').textContent = online ? 'Engine online' : 'Disconnected';
+}
+
+// "Configure Supabase →" link from login screen — bypasses login to show config panel
+function showCfgFromLogin() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  // Hide nav items that need data, show only config
+  document.querySelectorAll('.nav-i').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-config').classList.add('active');
+  const navConfig = document.querySelectorAll('.nav-i')[4];
+  if (navConfig) navConfig.classList.add('active');
+  document.getElementById('page-title').textContent = 'Configuration';
+  document.getElementById('cfg-status').textContent = 'Set Supabase URL + key, then save & reload to see the login screen again.';
+}
+
+// ===========================================================================
+// BRAND
+// ===========================================================================
+function toggleBrandDD() {
+  const dd = document.getElementById('brand-dd');
+  dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+function selectBrand(id, name, color) {
+  currentBrand = id;
+  document.getElementById('brand-name-label').textContent = name;
+  document.getElementById('brand-dot').style.background = color;
+  document.getElementById('brand-dd').style.display = 'none';
+  loadAll();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.brand-switch')) {
+    const dd = document.getElementById('brand-dd');
+    if (dd) dd.style.display = 'none';
+  }
+});
+
+// ===========================================================================
+// PLATFORM FILTER
+// ===========================================================================
+function filterPlatform(p, btn) {
+  currentPlatform = p;
+  document.querySelectorAll('#platform-filters .fb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadFeed();
+}
+
+// ===========================================================================
+// REALTIME — copied from working dashboard
+// ===========================================================================
+function subscribeRealtime() {
+  if (!sb) return;
+  sb.channel('orm-live')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+      loadFeed();
+      loadMetrics();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'escalations' }, () => loadEscalations())
+    .subscribe();
+}
+
+function loadAll() { loadMetrics(); loadFeed(); loadSentiment(); loadEscalations(); loadKB(); }
+
+// ===========================================================================
+// METRICS — query pattern copied from working dashboard
+// ===========================================================================
+function applyBrandFilter(q) {
+  if (currentBrand === 'all') return q;
+  return q.eq('brand', currentBrand === 'id8' ? 'ID8 Digital' : 'Gental Care');
+}
+
+async function loadMetrics() {
+  if (!sb) return;
+  try {
+    const { count: total } = await applyBrandFilter(sb.from('messages').select('*',{count:'exact',head:true}));
+    const { count: replied } = await applyBrandFilter(sb.from('messages').select('*',{count:'exact',head:true}).eq('action_taken','replied'));
+    const { count: escalated } = await applyBrandFilter(sb.from('messages').select('*',{count:'exact',head:true}).eq('action_taken','escalated'));
+    const { count: moderated } = await applyBrandFilter(sb.from('messages').select('*',{count:'exact',head:true}).eq('action_taken','moderated'));
+    const { count: openEsc } = await applyBrandFilter(sb.from('escalations').select('*',{count:'exact',head:true}).eq('status','open'));
+    document.getElementById('m-total').textContent = total || 0;
+    document.getElementById('m-replied').textContent = replied || 0;
+    document.getElementById('m-esc').textContent = escalated || 0;
+    document.getElementById('m-mod').textContent = moderated || 0;
+    document.getElementById('esc-badge').textContent = openEsc || 0;
+  } catch(e) { console.warn('metrics:', e); }
+}
+
+// ===========================================================================
+// FEED
+// ===========================================================================
+async function loadFeed() {
+  if (!sb) return;
+  const list = document.getElementById('feed-list');
+  try {
+    let q = sb.from('messages').select('*').order('created_at',{ascending:false}).limit(30);
+    if (currentPlatform !== 'all') q = q.eq('platform', currentPlatform);
+    q = applyBrandFilter(q);
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      list.innerHTML = '<div class="feed-empty">No messages yet for this brand/filter.</div>';
+      return;
+    }
+    list.innerHTML = data.map(m => feedHTML(m)).join('');
+  } catch(e) {
+    list.innerHTML = '<div class="feed-empty">Error loading feed: ' + (e.message||e) + '</div>';
+  }
+}
+
+function feedHTML(m) {
+  const icons = { Facebook:'📘', Instagram:'📸', TikTok:'🎵' };
+  const piClass = { Facebook:'fp-fb', Instagram:'fp-ig', TikTok:'fp-tt' };
+  const actionBadge = {
+    replied:'<span class="badge b-reply">⚡ replied</span>',
+    escalated:'<span class="badge b-esc">🎫 escalated</span>',
+    moderated:'<span class="badge b-mod">🛡 moderated</span>',
+    liked:'<span class="badge b-like">💚 liked</span>',
+  };
+  const sentBadge = {
+    positive:'<span class="badge b-pos">↑ pos</span>',
+    negative:'<span class="badge b-neg">↓ neg</span>',
+    neutral:'<span class="badge b-neu">→ neu</span>',
+  };
+  const conf = m.confidence_score;
+  const confHTML = conf != null
+    ? `<span class="conf-badge ${conf >= 0.8 ? 'conf-high' : conf >= 0.6 ? 'conf-med' : 'conf-low'}">${(conf*100).toFixed(0)}% conf</span>`
+    : '';
+  const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+  const safeMsg = (m.message_text||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+  return `<div class="feed-item" onclick="openConversation('${m.sender_id||''}','${m.platform||'Facebook'}','${safeMsg}')">
+    <div class="feed-platform ${piClass[m.platform]||'fp-fb'}">${icons[m.platform]||'💬'}</div>
+    <div class="feed-body">
+      <div class="feed-meta">
+        <span class="feed-platform-name">${m.platform||'Unknown'}</span>
+        <span class="feed-type">${m.type||'dm'}</span>
+        <span class="feed-time">${time}</span>
+      </div>
+      <div class="feed-msg">"${escHTML((m.message_text||'').slice(0,140))}"</div>
+      <div class="feed-tags">${actionBadge[m.action_taken]||''}${sentBadge[m.sentiment]||''}${confHTML}${m.intent?`<span class="intent-tag">${escHTML(m.intent.replace(/_/g,' '))}</span>`:''}</div>
+    </div>
+  </div>`;
+}
+
+// ===========================================================================
+// CONVERSATION HISTORY MODAL
+// ===========================================================================
+async function openConversation(senderId, platform, latestMsg) {
+  if (!senderId || !sb) return;
+  const modal = document.getElementById('conv-modal');
+  modal.classList.add('active');
+  document.getElementById('conv-modal-title').textContent = `Conversation · ${platform}`;
+  const body = document.getElementById('conv-modal-body');
+  body.innerHTML = '<div class="feed-empty">Loading…</div>';
+  try {
+    const { data } = await sb.from('conversation_history')
+      .select('*').eq('sender_id', senderId).eq('platform', platform)
+      .order('created_at',{ascending:true}).limit(20);
+    if (!data || data.length === 0) {
+      body.innerHTML = `<div class="conv-wrap"><div class="conv-bubble conv-customer">"${escHTML(latestMsg)}"</div><div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">No conversation history stored yet</div></div>`;
+      return;
+    }
+    body.innerHTML = `<div class="conv-wrap">` + data.map(h => `
+      <div>
+        <div class="conv-time">${h.role === 'customer' ? '👤 Customer' : '🤖 Agent'} · ${new Date(h.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="conv-bubble ${h.role === 'customer' ? 'conv-customer' : 'conv-agent'}">${escHTML(h.message)}</div>
+      </div>`).join('') + `</div>`;
+  } catch(e) {
+    body.innerHTML = '<div class="feed-empty">Error loading conversation</div>';
+  }
+}
+function closeConvModal() { document.getElementById('conv-modal').classList.remove('active'); }
+
+// ===========================================================================
+// SENTIMENT
+// ===========================================================================
+async function loadSentiment() {
+  if (!sb) return;
+  try {
+    const { data: msgs } = await applyBrandFilter(sb.from('messages').select('sentiment'));
+    if (msgs && msgs.length > 0) {
+      const pos = msgs.filter(m=>m.sentiment==='positive').length;
+      const neu = msgs.filter(m=>m.sentiment==='neutral').length;
+      const neg = msgs.filter(m=>m.sentiment==='negative').length;
+      const total = msgs.length;
+      const posP = Math.round((pos/total)*100);
+      const neuP = Math.round((neu/total)*100);
+      const negP = 100 - posP - neuP;
+      document.getElementById('sent-bar').innerHTML = `<div class="sp" style="width:${posP}%"></div><div class="sn" style="width:${neuP}%"></div><div class="sg" style="width:${negP}%"></div>`;
+      document.getElementById('sent-legend').innerHTML = `
+        <div class="sl-item"><div class="sl-dot" style="background:var(--green-l)"></div>Positive ${posP}% (${pos})</div>
+        <div class="sl-item"><div class="sl-dot" style="background:#94A3B8"></div>Neutral ${neuP}% (${neu})</div>
+        <div class="sl-item"><div class="sl-dot" style="background:var(--red)"></div>Negative ${negP}% (${neg})</div>`;
+    }
+    const { data: trends } = await sb.from('sentiment_daily').select('*').order('date',{ascending:false}).limit(14);
+    const trendEl = document.getElementById('trend-list');
+    if (!trends || trends.length === 0) {
+      trendEl.innerHTML = '<div class="feed-empty">No trend data yet</div>';
+    } else {
+      trendEl.innerHTML = trends.map(t => `<div class="ib-row"><span class="ib-name" style="font-family:'JetBrains Mono',monospace;font-size:11px">${t.date}</span><div class="ib-track"><div class="ib-fill" style="width:${t.score||0}%;background:var(--green-l)"></div></div><span class="ib-count">${t.score||0}</span></div>`).join('');
+    }
+    const { data: intents } = await applyBrandFilter(sb.from('messages').select('intent'));
+    const intentEl = document.getElementById('intent-list');
+    if (intents && intents.length > 0) {
+      const counts = {};
+      intents.forEach(m => { if(m.intent) counts[m.intent] = (counts[m.intent]||0)+1; });
+      const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      const max = sorted[0]?.[1] || 1;
+      intentEl.innerHTML = sorted.map(([intent,count]) => `<div class="ib-row"><span class="ib-name">${escHTML(intent.replace(/_/g,' '))}</span><div class="ib-track"><div class="ib-fill" style="width:${Math.round((count/max)*100)}%"></div></div><span class="ib-count">${count}</span></div>`).join('');
+    } else {
+      intentEl.innerHTML = '<div class="feed-empty">No intent data yet</div>';
+    }
+  } catch(e) { console.warn('sentiment:', e); }
+}
+
+// ===========================================================================
+// ESCALATIONS
+// ===========================================================================
+async function loadEscalations() {
+  if (!sb) return;
+  try {
+    let q = sb.from('escalations').select('*').order('created_at',{ascending:false});
+    if (currentEscFilter === 'open') q = q.eq('status','open');
+    if (currentEscFilter === 'resolved') q = q.eq('status','resolved');
+    q = applyBrandFilter(q);
+    const { data } = await q;
+    renderEscalations(data || []);
+  } catch(e) { console.warn('escalations:', e); }
+}
+
+function filterEsc(type, btn) {
+  currentEscFilter = type;
+  document.querySelectorAll('#panel-escalations .fb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadEscalations();
+}
+
+function renderEscalations(data) {
+  const list = document.getElementById('esc-list');
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div class="feed-empty">✅ No escalations — all clear!</div>';
+    return;
+  }
+  const stripes = { QUALITY:'var(--red)', SAFETY:'var(--red)', NEGATIVE:'var(--amber)', COMPLAINT:'var(--amber)', LEGAL:'var(--red)', UNKNOWN:'var(--gray)' };
+  list.innerHTML = data.map(e => `
+    <div class="esc-card" id="esc-${e.id}">
+      <div class="esc-inner">
+        <div class="esc-stripe" style="background:${stripes[e.tag]||'var(--gray)'}"></div>
+        <div class="esc-body">
+          <div class="esc-meta">
+            <span class="esc-id">${(e.id||'').slice(0,8)}…</span>
+            <span class="badge ${e.status==='open'?'b-esc':'b-like'}">${e.status||'open'}</span>
+            <span class="badge ${e.priority==='high'?'b-high':e.priority==='medium'?'b-med':'b-low'}">${e.priority||'medium'} priority</span>
+            ${e.tag?`<span class="intent-tag">${escHTML(e.tag)}</span>`:''}
+          </div>
+          <div class="esc-msg">"${escHTML((e.message_text||'').slice(0,180))}"</div>
+          <div style="font-size:11px;color:var(--muted)">${escHTML(e.platform||'Unknown')} · ${e.created_at?new Date(e.created_at).toLocaleDateString():'—'}</div>
+        </div>
+      </div>
+      ${e.status==='open'?`<div class="esc-actions">
+        <button class="btn-sm primary" onclick="resolveEsc('${e.id}')">✓ Mark resolved</button>
+        <button class="btn-sm" onclick="openConversation('${e.sender_id||''}','${e.platform||'Facebook'}','${(e.message_text||'').replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">💬 View conversation</button>
+      </div>`:''}
+    </div>`).join('');
+}
+
+async function resolveEsc(id) {
+  if (!sb) return;
+  await sb.from('escalations').update({ status:'resolved', resolved_at: new Date().toISOString() }).eq('id', id);
+  const el = document.getElementById('esc-'+id);
+  if (el) el.style.opacity = '0.4';
+  loadMetrics();
+  setTimeout(loadEscalations, 800);
+}
+
+// ===========================================================================
+// KNOWLEDGE BASE
+// ===========================================================================
+async function loadKB() {
+  if (!sb) return;
+  try {
+    const { data } = await sb.from('knowledge_base').select('*').order('category').order('created_at');
+    allKBEntries = data || [];
+    renderKB(allKBEntries);
+    document.getElementById('kb-count').textContent = `${allKBEntries.length} entries`;
+    const cats = [...new Set(allKBEntries.map(k => k.category))];
+    document.getElementById('kb-filters').innerHTML =
+      `<button class="fb active" onclick="filterKBCat('all',this)">All</button>` +
+      cats.map(c => `<button class="fb" onclick="filterKBCat('${c}',this)">${escHTML(c)}</button>`).join('');
+  } catch(e) { console.warn('kb:', e); }
+}
+
+function renderKB(entries) {
+  const list = document.getElementById('kb-list');
+  if (!entries || entries.length === 0) {
+    list.innerHTML = '<div class="feed-empty">No knowledge entries yet — click + Add knowledge to start.</div>';
+    return;
+  }
+  list.innerHTML = entries.map(k => `
+    <div class="kb-item">
+      <div class="kb-item-header">
+        <span class="kb-cat">${escHTML(k.category||'')}</span>
+        <span style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">${escHTML(k.brand||'')}</span>
+      </div>
+      <div class="kb-content">${escHTML(k.content||'')}</div>
+      <div class="kb-actions">
+        <button class="btn-sm" onclick="editKBEntry('${k.id}')">✏️ Edit</button>
+        <button class="btn-sm" onclick="deleteKBEntry('${k.id}')">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function searchKB(q) {
+  if (!q.trim()) { renderKB(allKBEntries); return; }
+  const lc = q.toLowerCase();
+  renderKB(allKBEntries.filter(k => (k.content||'').toLowerCase().includes(lc) || (k.category||'').toLowerCase().includes(lc)));
+}
+
+function filterKBCat(cat, btn) {
+  document.querySelectorAll('#kb-filters .fb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (cat === 'all') { renderKB(allKBEntries); return; }
+  renderKB(allKBEntries.filter(k => k.category === cat));
+}
+
+function openKBModal(id=null) {
+  document.getElementById('kb-modal').classList.add('active');
+  document.getElementById('kb-modal-title').textContent = id ? 'Edit knowledge' : 'Add knowledge';
+  document.getElementById('kb-edit-id').value = id || '';
+  if (!id) {
+    const brandLabel = document.getElementById('brand-name-label').textContent;
+    document.getElementById('kb-brand').value = brandLabel === 'All brands' ? 'ID8 Digital' : brandLabel;
+    document.getElementById('kb-category').value = 'general';
+    document.getElementById('kb-content').value = '';
+  }
+}
+
+function editKBEntry(id) {
+  const entry = allKBEntries.find(k => k.id === id);
+  if (!entry) return;
+  openKBModal(id);
+  document.getElementById('kb-brand').value = entry.brand || '';
+  document.getElementById('kb-category').value = entry.category || '';
+  document.getElementById('kb-content').value = entry.content || '';
+}
+
+async function deleteKBEntry(id) {
+  if (!confirm('Delete this knowledge entry?')) return;
+  if (!sb) return;
+  await sb.from('knowledge_base').delete().eq('id', id);
+  loadKB();
+}
+
+async function saveKBEntry() {
+  if (!sb) return;
+  const id = document.getElementById('kb-edit-id').value;
+  const brand = document.getElementById('kb-brand').value.trim();
+  const category = document.getElementById('kb-category').value.trim();
+  const content = document.getElementById('kb-content').value.trim();
+  if (!brand || !content) { alert('Brand and content are required'); return; }
+  if (id) await sb.from('knowledge_base').update({ brand, category, content }).eq('id', id);
+  else    await sb.from('knowledge_base').insert({ brand, category, content });
+  closeKBModal();
+  loadKB();
+}
+
+function closeKBModal() { document.getElementById('kb-modal').classList.remove('active'); }
+
+// ===========================================================================
+// CONFIG PANEL
+// ===========================================================================
+function saveConfig() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const key = document.getElementById('cfg-key').value.trim();
+  const engine = document.getElementById('cfg-engine').value.trim();
+  if (url) localStorage.setItem('sb_url', url);
+  if (key) localStorage.setItem('sb_key', key);
+  if (engine) localStorage.setItem('engine_url', engine);
+  document.getElementById('cfg-status').textContent = '✅ Saved. Reloading…';
+  setTimeout(()=>location.reload(), 600);
+}
+
+async function checkEngine() {
+  const url = (document.getElementById('cfg-engine').value.trim() || ENGINE_URL).replace(/\/$/,'');
+  const el = document.getElementById('engine-status');
+  if (!url) { el.textContent = '✗ No engine URL set'; return; }
+  el.textContent = 'Checking…';
+  try {
+    const resp = await fetch(url + '/health');
+    const data = await resp.json().catch(()=>({}));
+    el.innerHTML = (data.status === 'ok' || resp.ok)
+      ? `✅ Online · Claude: ${data.config?.claude?'✅':'—'} · Supabase: ${data.config?.supabase?'✅':'—'}`
+      : '❌ Engine reachable but returned an error';
+  } catch(e) { el.textContent = '❌ Cannot reach engine: ' + e.message; }
+}
+
+// ===========================================================================
+// NAV
+// ===========================================================================
+const TITLES = { live:'Live feed', sentiment:'Sentiment analytics', escalations:'Escalations', knowledge:'Knowledge base', config:'Configuration' };
+function showPanel(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-i').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  document.getElementById('page-title').textContent = TITLES[name] || name;
+  if (name === 'sentiment') loadSentiment();
+  if (name === 'escalations') loadEscalations();
+  if (name === 'knowledge') loadKB();
+}
+
+// ===========================================================================
+// UTILITIES
+// ===========================================================================
+function escHTML(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+// ===========================================================================
+// BOOT
+// ===========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Pre-fill config inputs
+  document.getElementById('cfg-url').value = SUPABASE_URL;
+  document.getElementById('cfg-key').value = SUPABASE_KEY;
+  document.getElementById('cfg-engine').value = ENGINE_URL;
+
+  // If config is set, init Supabase and check session
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    initSb(SUPABASE_URL, SUPABASE_KEY);
+    checkSession();
+  } else {
+    // No config — show login but with hint to configure first
+    document.getElementById('login-err').textContent = 'Supabase not configured yet — click below to set it up.';
+  }
+});
 </script>
 </body>
 </html>

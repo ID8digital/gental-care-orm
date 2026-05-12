@@ -373,17 +373,18 @@ async function directMetaDM(recipientId, text) {
 }
 
 // Instagram DM direct via Meta Graph API.
-// Uses the page-scoped endpoint /me/messages with the Page Access Token —
-// Meta routes IG vs FB based on the recipient ID type, so the path is the same
-// but we keep a separate function for clarity and easier debugging.
+// Instagram messages MUST be sent via the IG Business Account ID endpoint,
+// not /me (which routes to the Page for Messenger, not Instagram).
+// IG_BUSINESS_ACCOUNT_ID is set in Render env vars.
 async function directInstagramDM(recipientId, text) {
-  const resp = await fetch("https://graph.facebook.com/v20.0/me/messages", {
+  const igAccountId = process.env.IG_BUSINESS_ACCOUNT_ID;
+  if (!igAccountId) throw new Error("IG_BUSINESS_ACCOUNT_ID not configured");
+  const resp = await fetch(`https://graph.facebook.com/v20.0/${igAccountId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       recipient: { id: recipientId },
       message: { text },
-      messaging_type: "RESPONSE",
       access_token: process.env.META_PAGE_ACCESS_TOKEN
     })
   });

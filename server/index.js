@@ -372,6 +372,26 @@ async function directMetaDM(recipientId, text) {
   return resp.json();
 }
 
+// Instagram DM direct via Meta Graph API.
+// Uses the page-scoped endpoint /me/messages with the Page Access Token —
+// Meta routes IG vs FB based on the recipient ID type, so the path is the same
+// but we keep a separate function for clarity and easier debugging.
+async function directInstagramDM(recipientId, text) {
+  const resp = await fetch("https://graph.facebook.com/v20.0/me/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      recipient: { id: recipientId },
+      message: { text },
+      messaging_type: "RESPONSE",
+      access_token: process.env.META_PAGE_ACCESS_TOKEN
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(`Instagram DM failed: ${data.error.message}`);
+  return data;
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // ZOHO DESK
 // ─────────────────────────────────────────────────────────────────────
@@ -400,6 +420,61 @@ async function createZohoTicket({ message, classification, context }) {
 // ─────────────────────────────────────────────────────────────────────
 // CORE PROCESSOR
 // ─────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────
+// HUMAN-SOUNDING REPLY GENERATOR
+// ─────────────────────────────────────────────────────────────────────
+async function generateHumanReply(message, classification, history, knowledgeChunks, brand) {
+  const historyText = history.length > 0
+    ? "Previous messages in this conversation:\n" +
+      history.map(h => `${h.role === "customer" ? "Them" : "You"}: ${h.message}`).join("\n") + "\n\n"
+    : "";
+
+  const knowledgeText = knowledgeChunks.length > 0
+    ? "Relevant brand knowledge:\n" + knowledgeChunks.map(k => k.content).join("\n") + "\n\n"
+    : "";
+
+  const systemPrompt = `You are a real team member at ${brand} responding to a social media message. 
+
+Your job: write ONE natural, human reply to send to this person.
+
+RULES:
+- Write like a smart, warm human — not a bot or corporate account
+- 1-3 sentences maximum — social media replies are short
+- Use contractions naturally (we're, you'll, it's, that's)
+- Never start with "Hi!" or "Hello!" — get straight to the point or use a varied opener
+- Never use bullet points — flowing natural sentences only
+- Always end with a clear next step (email us, check the link, etc.)
+- Match their energy — casual if they're casual, professional if they're formal
+- If they asked something specific, answer it specifically — don't be vague
+- Sign off as "— Team ID8" only if it feels natural, otherwise skip it
+- Use the knowledge provided but don't quote it word for word
+
+${knowledgeText}${historyText}Their message: "${message}"
+Intent detected: ${classification.intent}
+
+Write ONLY the reply text. No JSON. No quotes around it. Just the reply.`;
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 200,
+      system: systemPrompt,
+      messages: [{ role: "user", content: "Write the reply now." }]
+    })
+  });
+
+  if (!resp.ok) return classification.reply;
+  const data = await resp.json();
+  return data.content[0].text.trim();
+}
+
 async function processMessage({ message, context }) {
   log("info", "Incoming", { platform: context.platform, type: context.type, snippet: message.slice(0, 60) });
 
@@ -423,20 +498,47 @@ async function processMessage({ message, context }) {
 
       case "auto_reply": {
         if (!classification.reply) break;
+        // Generate human-sounding reply
+        try {
+          const humanReply = await generateHumanReply(
+            message,
+            classification,
+            await getConversationHistory(context.senderId, context.brand || "ID8 Digital", context.platform, 5),
+            await searchKnowledge(message, context.brand || "ID8 Digital", 3),
+            context.brand || "ID8 Digital"
+          );
+          if (humanReply && humanReply.length > 10) {
+            classification.reply = humanReply;
+          }
+        } catch(e) {
+          log("warn", "Human reply generation failed, using original", { error: e.message });
+        }
         if (context.type === "dm" || context.type === "message") {
-          try {
-            const subId = await resolveSubscriber(context.senderId, context.platform);
-            await sendDM(subId, classification.reply);
-            await tagSubscriber(subId, `ORM_${classification.intent.toUpperCase()}`);
-            log("info", "DM sent via ManyChat", { intent: classification.intent });
-            await saveConversationTurn(context.senderId, context.brand || "ID8 Digital", context.platform, message, classification.reply);
-          } catch(err) {
-            log("warn", "ManyChat send failed", { error: err.message, senderId: context.senderId });
+          // ─── Instagram: skip ManyChat entirely, use direct Meta Graph API ───
+          if (context.platform === "Instagram") {
             try {
-              await directMetaDM(context.senderId, classification.reply);
-              log("info", "Direct Meta DM sent as fallback");
-            } catch(err2) {
-              log("error", "Both ManyChat and direct Meta failed", { error: err2.message });
+              await directInstagramDM(context.senderId, classification.reply);
+              log("info", "Instagram DM sent direct via Meta", { intent: classification.intent });
+              await saveConversationTurn(context.senderId, context.brand || "ID8 Digital", context.platform, message, classification.reply);
+            } catch(err) {
+              log("error", "Instagram direct send failed", { error: err.message, senderId: context.senderId });
+            }
+          } else {
+            // ─── Facebook: try ManyChat first, fallback to direct Meta ───
+            try {
+              const subId = await resolveSubscriber(context.senderId, context.platform);
+              await sendDM(subId, classification.reply);
+              await tagSubscriber(subId, `ORM_${classification.intent.toUpperCase()}`);
+              log("info", "DM sent via ManyChat", { intent: classification.intent });
+              await saveConversationTurn(context.senderId, context.brand || "ID8 Digital", context.platform, message, classification.reply);
+            } catch(err) {
+              log("warn", "ManyChat send failed", { error: err.message, senderId: context.senderId });
+              try {
+                await directMetaDM(context.senderId, classification.reply);
+                log("info", "Direct Meta DM sent as fallback");
+              } catch(err2) {
+                log("error", "Both ManyChat and direct Meta failed", { error: err2.message });
+              }
             }
           }
         } else {
@@ -472,14 +574,29 @@ async function processMessage({ message, context }) {
           log("info", "Zoho ticket created", { ticketId: ticket.id });
         }
         if ((context.type === "dm" || context.type === "message") && context.senderId) {
-          const holdMsg = "Hi! Thank you for reaching out to Gental Care. We have received your message and our team is looking into this right now. We will get back to you shortly. Regards, Team Gental Care";
-          try {
-            const subId = await resolveSubscriber(context.senderId, context.platform);
-            await sendDM(subId, holdMsg);
-            await tagSubscriber(subId, `ORM_ESCALATED_${classification.escalation_tag}`);
-            if (process.env.MANYCHAT_ESCALATION_FLOW_NS) await triggerFlow(subId, process.env.MANYCHAT_ESCALATION_FLOW_NS);
-          } catch (err) {
-            log("warn", "Could not send holding DM", { error: err.message });
+          const holdMsg = "Hi! Thank you for reaching out. We have received your message and our team is looking into this right now. We will get back to you shortly.";
+          // Instagram: direct Meta. Facebook: ManyChat-first with fallback.
+          if (context.platform === "Instagram") {
+            try {
+              await directInstagramDM(context.senderId, holdMsg);
+              log("info", "Instagram holding DM sent direct via Meta");
+            } catch(err) {
+              log("warn", "Could not send Instagram holding DM", { error: err.message });
+            }
+          } else {
+            try {
+              const subId = await resolveSubscriber(context.senderId, context.platform);
+              await sendDM(subId, holdMsg);
+              await tagSubscriber(subId, `ORM_ESCALATED_${classification.escalation_tag}`);
+              if (process.env.MANYCHAT_ESCALATION_FLOW_NS) await triggerFlow(subId, process.env.MANYCHAT_ESCALATION_FLOW_NS);
+            } catch (err) {
+              log("warn", "Could not send holding DM via ManyChat, trying direct Meta", { error: err.message });
+              try {
+                await directMetaDM(context.senderId, holdMsg);
+              } catch (err2) {
+                log("warn", "Could not send holding DM at all", { error: err2.message });
+              }
+            }
           }
         }
         result.outcome = "escalated";
@@ -487,7 +604,7 @@ async function processMessage({ message, context }) {
         // Save escalation to Supabase
         const saved = await saveMessage(message, context, classification, "escalated", { zohoTicketId: result.zohoTicketId });
         if (saved) await saveEscalation(message, context, classification, saved.id);
-        await updateSentiment(classification.sentiment, context.brand || "Gental Care");
+        await updateSentiment(classification.sentiment, context.brand || "ID8 Digital");
         return result;
       }
     }
@@ -499,7 +616,7 @@ async function processMessage({ message, context }) {
 
   // Save all messages to Supabase
   await saveMessage(message, context, classification, result.outcome, { zohoTicketId: result.zohoTicketId });
-  await updateSentiment(classification.sentiment, context.brand || "Gental Care");
+  await updateSentiment(classification.sentiment, context.brand || "ID8 Digital");
 
   return result;
 }
